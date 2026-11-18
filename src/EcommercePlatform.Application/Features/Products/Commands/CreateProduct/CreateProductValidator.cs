@@ -1,0 +1,27 @@
+using FluentValidation;
+
+namespace EcommercePlatform.Application.Features.Products.Commands.CreateProduct;
+
+public sealed class CreateProductValidator : AbstractValidator<CreateProductCommand>
+{
+    public CreateProductValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Product name is required.")
+            .MaximumLength(200).WithMessage("Product name must not exceed 200 characters.");
+
+        RuleFor(x => x.Sku)
+            .NotEmpty().WithMessage("SKU is required.")
+            .MaximumLength(64).WithMessage("SKU must not exceed 64 characters.");
+
+        RuleFor(x => x.Description)
+            .MaximumLength(2000).WithMessage("Description must not exceed 2000 characters.");
+
+        RuleFor(x => x.Price)
+            .GreaterThanOrEqualTo(0).WithMessage("Price must be greater than or equal to 0.");
+
+        RuleFor(x => x.StockQuantity)
+            .GreaterThanOrEqualTo(0).WithMessage("Stock quantity must be greater than or equal to 0.");
+    }
+}
+
