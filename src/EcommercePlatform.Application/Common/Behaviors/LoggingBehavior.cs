@@ -34,4 +34,3 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
         }
     }
 }
-

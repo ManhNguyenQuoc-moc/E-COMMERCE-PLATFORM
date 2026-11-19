@@ -1,6 +1,8 @@
-using System.Security.Claims;
-using EcommercePlatform.Application.Common.Interfaces;
+using System.Threading.RateLimiting;
 using EcommercePlatform.Api.Middlewares;
+using EcommercePlatform.Api.Services;
+using EcommercePlatform.Application.Common.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 
@@ -32,6 +34,12 @@ public static class ApiServiceExtensions
                     Description = "Enter your JWT Bearer token below (without the 'Bearer ' prefix)."
                 };
 
+                document.Security ??= [];
+                document.Security.Add(new OpenApiSecurityRequirement
+                {
+                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+                });
+
                 return Task.CompletedTask;
             });
         });
@@ -42,6 +50,34 @@ public static class ApiServiceExtensions
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
 
+        services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+        {
+            options.Events = new JwtBearerEvents
+            {
+                OnChallenge = async context =>
+                {
+                    context.HandleResponse();
+                    await GlobalExceptionHandler.WriteProblemDetailsAsync(
+                        context.HttpContext,
+                        StatusCodes.Status401Unauthorized,
+                        "Unauthorized",
+                        "Authentication token is missing, invalid, or expired.",
+                        "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+                        context.HttpContext.RequestAborted);
+                },
+                OnForbidden = async context =>
+                {
+                    await GlobalExceptionHandler.WriteProblemDetailsAsync(
+                        context.HttpContext,
+                        StatusCodes.Status403Forbidden,
+                        "Forbidden",
+                        "You do not have permission to access this resource.",
+                        "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+                        context.HttpContext.RequestAborted);
+                }
+            };
+        });
+
         services.AddCors(options =>
         {
             options.AddPolicy("Default", policy =>
@@ -50,6 +86,30 @@ public static class ApiServiceExtensions
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
+        });
+
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.OnRejected = async (context, cancellationToken) =>
+                await GlobalExceptionHandler.WriteProblemDetailsAsync(
+                    context.HttpContext,
+                    StatusCodes.Status429TooManyRequests,
+                    "Too Many Requests",
+                    "Rate limit exceeded. Please try again later.",
+                    "https://tools.ietf.org/html/rfc6585#section-4",
+                    cancellationToken);
+
+            options.AddPolicy("AuthPolicy", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
         });
 
         return services;
@@ -81,11 +141,3 @@ public static class ApiServiceExtensions
         return app;
     }
 }
-
-internal sealed class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICurrentUser
-{
-    public string? UserId => httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-    public string? Email => httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Email);
-    public bool IsAuthenticated => httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
-}
-
