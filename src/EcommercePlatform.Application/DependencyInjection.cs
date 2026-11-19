@@ -1,6 +1,8 @@
 using System.Reflection;
 using EcommercePlatform.Application.Common.Behaviors;
 using FluentValidation;
+using Mapster;
+using MapsterMapper;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +13,11 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         var assembly = Assembly.GetExecutingAssembly();
+
+        var typeAdapterConfig = TypeAdapterConfig.GlobalSettings;
+        typeAdapterConfig.Scan(assembly);
+        services.AddSingleton(typeAdapterConfig);
+        services.AddScoped<IMapper, ServiceMapper>();
 
         services.AddValidatorsFromAssembly(assembly);
 
