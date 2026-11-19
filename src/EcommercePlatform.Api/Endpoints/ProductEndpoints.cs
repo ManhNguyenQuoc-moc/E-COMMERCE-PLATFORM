@@ -42,8 +42,11 @@ public static class ProductEndpoints
                 return TypedResults.Created($"/api/v1/products/{productId}", new { Id = productId });
             })
             .WithName("CreateProduct")
+            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status201Created)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden);
 
         group.MapPut("/{id:guid}", async (
                 Guid id,
@@ -58,8 +61,11 @@ public static class ProductEndpoints
                 return TypedResults.NoContent();
             })
             .WithName("UpdateProduct")
+            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:guid}", async (Guid id, ISender sender, CancellationToken cancellationToken) =>
@@ -68,7 +74,10 @@ public static class ProductEndpoints
                 return TypedResults.NoContent();
             })
             .WithName("DeleteProduct")
+            .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         return app;
