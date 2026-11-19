@@ -1,5 +1,6 @@
 using EcommercePlatform.Application.Common.Interfaces;
 using EcommercePlatform.Infrastructure.Persistence;
+using EcommercePlatform.Infrastructure.Persistence.Repositories;
 using EcommercePlatform.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +22,8 @@ public static class DependencyInjection
                 sqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
 
         services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
+        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>());
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddTransient<IEmailSender, EmailService>();
 
         return services;

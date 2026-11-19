@@ -2,6 +2,7 @@
 private-logs/
 AGENT.MD
 skills/
+Myskill/
 
 # .NET build artifacts
 bin/
