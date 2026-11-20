@@ -1,11 +1,11 @@
-using EcommercePlatform.Application.Common.Models; // Import PaginatedList<T>
-using EcommercePlatform.Application.Features.Products.Commands.CreateProduct; // Import CreateProductCommand
-using EcommercePlatform.Application.Features.Products.Commands.DeleteProduct; // Import DeleteProductCommand
-using EcommercePlatform.Application.Features.Products.Commands.UpdateProduct; // Import UpdateProductCommand
-using EcommercePlatform.Application.Features.Products.DTOs; // Import ProductDto
-using EcommercePlatform.Application.Features.Products.Queries.GetProductById; // Import GetProductByIdQuery
+using EcommercePlatform.Application.Common.Models;
+using EcommercePlatform.Application.Features.Products.Commands.CreateProduct;
+using EcommercePlatform.Application.Features.Products.Commands.DeleteProduct;
+using EcommercePlatform.Application.Features.Products.Commands.UpdateProduct;
+using EcommercePlatform.Application.Features.Products.DTOs;
+using EcommercePlatform.Application.Features.Products.Queries.GetProductById;
 using EcommercePlatform.Application.Features.Products.Queries.GetProducts;
-using EcommercePlatform.Application.Features.Products.Commands.PatchProduct; // Import PatchProductCommand
+using EcommercePlatform.Application.Features.Products.Commands.PatchProduct;
 using MediatR;
 
 namespace EcommercePlatform.Api.Endpoints;
@@ -19,7 +19,7 @@ public static class ProductEndpoints
 
         group.MapGet("/", async (
                 [AsParameters] GetProductsQuery query,
-                ISender sender, // Inject MediatR ISender
+                ISender sender,
                 CancellationToken cancellationToken) =>
             {
                 var result = await sender.Send(query, cancellationToken);
@@ -58,7 +58,7 @@ public static class ProductEndpoints
         group.MapPut("/{id:guid}", async (
                 Guid id,
                 UpdateProductRequest request,
-                ISender sender, // Inject MediatR ISender
+                ISender sender,
                 CancellationToken cancellationToken) =>
             {
                 await sender.Send(
@@ -77,7 +77,7 @@ public static class ProductEndpoints
         group.MapPatch("/{id:guid}", async (
                 Guid id,
                 PatchProductRequest request,
-                ISender sender, // Inject MediatR ISender
+                ISender sender,
                 CancellationToken cancellationToken) =>
             {
                 await sender.Send(

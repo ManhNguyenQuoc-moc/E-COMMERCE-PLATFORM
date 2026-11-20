@@ -1,10 +1,10 @@
-using EcommercePlatform.Application.Common.Interfaces; // Import IRepository<T>
-using EcommercePlatform.Application.Common.Models; // Import PaginatedList<T>
-using EcommercePlatform.Application.Features.Products.DTOs; // Import ProductDto
-using EcommercePlatform.Domain.Entities; // Import Entity Product
+using EcommercePlatform.Application.Common.Interfaces;
+using EcommercePlatform.Application.Common.Models;
+using EcommercePlatform.Application.Features.Products.DTOs;
+using EcommercePlatform.Domain.Entities;
 using Mapster;
-using MapsterMapper; // Import interface IMapper
-using MediatR; // Import IRequestHandler
+using MapsterMapper;
+using MediatR;
 
 namespace EcommercePlatform.Application.Features.Products.Queries.GetProducts;
 

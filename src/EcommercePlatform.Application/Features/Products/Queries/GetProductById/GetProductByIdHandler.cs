@@ -1,10 +1,10 @@
-using EcommercePlatform.Application.Common.Interfaces; // Import IRepository<T>
-using EcommercePlatform.Application.Features.Products.DTOs; // Import ProductDto
-using EcommercePlatform.Domain.Entities; // Import Entity Product
+using EcommercePlatform.Application.Common.Interfaces;
+using EcommercePlatform.Application.Features.Products.DTOs;
+using EcommercePlatform.Domain.Entities;
 using EcommercePlatform.Domain.Exceptions;
 using Mapster;
-using MapsterMapper; // Import interface IMapper
-using MediatR; // Import IRequestHandler
+using MapsterMapper;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace EcommercePlatform.Application.Features.Products.Queries.GetProductById;
