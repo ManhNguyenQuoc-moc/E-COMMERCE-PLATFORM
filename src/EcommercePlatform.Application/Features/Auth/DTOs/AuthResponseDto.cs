@@ -7,4 +7,7 @@ public sealed record AuthResponseDto(
     string Email,
     string FullName,
     string Role,
-    string AccessToken);
+    string AccessToken,
+    DateTimeOffset AccessTokenExpiresAt,
+    string RefreshToken,
+    DateTimeOffset RefreshTokenExpiresAt);

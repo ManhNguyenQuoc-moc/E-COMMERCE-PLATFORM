@@ -1,5 +1,7 @@
 using EcommercePlatform.Application.Features.Auth.Commands.Login;
+using EcommercePlatform.Application.Features.Auth.Commands.RefreshToken;
 using EcommercePlatform.Application.Features.Auth.Commands.Register;
+using EcommercePlatform.Application.Features.Auth.Commands.RevokeToken;
 using EcommercePlatform.Application.Features.Auth.DTOs;
 using MediatR;
 
@@ -39,6 +41,36 @@ public static class AuthEndpoints
             .WithName("Login")
             .AllowAnonymous()
             .Produces<AuthResponseDto>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        group.MapPost("/refresh-token", async (
+                RefreshTokenCommand command,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                var response = await sender.Send(command, cancellationToken);
+                return TypedResults.Ok(response);
+            })
+            .WithName("RefreshToken")
+            .AllowAnonymous()
+            .Produces<AuthResponseDto>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        group.MapPost("/logout", async (
+                RevokeTokenCommand command,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                await sender.Send(command, cancellationToken);
+                return TypedResults.NoContent();
+            })
+            .WithName("Logout")
+            .RequireAuthorization()
+            .Produces(StatusCodes.Status204NoContent)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);

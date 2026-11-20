@@ -5,10 +5,13 @@ using MapsterMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
+using RefreshTokenEntity = EcommercePlatform.Domain.Entities.RefreshToken;
+
 namespace EcommercePlatform.Application.Features.Auth.Commands.Login;
 
 public sealed class LoginHandler(
     IRepository<Account> accountRepository,
+    IRepository<RefreshTokenEntity> refreshTokenRepository,
     IUnitOfWork unitOfWork,
     IPasswordHasher passwordHasher,
     IJwtTokenGenerator jwtTokenGenerator,
@@ -42,18 +45,23 @@ public sealed class LoginHandler(
             throw new UnauthorizedAccessException("Account is deactivated.");
         }
 
-        account.RecordLogin();
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         var userId = account.User?.Id ?? account.Id;
 
-        var token = jwtTokenGenerator.GenerateToken(
+        var accessToken = jwtTokenGenerator.GenerateAccessToken(
             userId,
             account.Id,
             account.Username,
             account.Email,
             account.Role);
 
-        return mapper.Map<AuthResponseDto>((account, account.User, token));
+        var refreshTokenResult = jwtTokenGenerator.GenerateRefreshToken();
+        var refreshTokenHash = jwtTokenGenerator.HashRefreshToken(refreshTokenResult.Token);
+        var refreshToken = new RefreshTokenEntity(account.Id, refreshTokenHash, refreshTokenResult.ExpiresAt);
+
+        account.RecordLogin();
+        await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return mapper.Map<AuthResponseDto>((account, account.User, accessToken, refreshTokenResult));
     }
 }

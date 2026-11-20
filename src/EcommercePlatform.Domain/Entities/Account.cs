@@ -16,6 +16,9 @@ public class Account : BaseEntity
 
     public User? User { get; private set; }
 
+    private readonly List<RefreshToken> _refreshTokens = [];
+    public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
+
     private Account()
     {
     }
