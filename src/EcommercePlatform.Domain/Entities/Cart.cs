@@ -79,4 +79,17 @@ public class Cart : BaseEntity
         UpdatedAt = DateTimeOffset.UtcNow;
         return existingItem;
     }
+
+    public void RemoveItems(IEnumerable<Guid> cartItemIds)
+    {
+        var idSet = cartItemIds.ToHashSet();
+        _items.RemoveAll(i => idSet.Contains(i.Id));
+
+        if (_items.Count == 0)
+        {
+            AppliedCouponId = null;
+        }
+
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }

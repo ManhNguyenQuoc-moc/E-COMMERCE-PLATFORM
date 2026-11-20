@@ -19,12 +19,44 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => o.OrderNumber)
             .IsUnique();
 
+        builder.HasIndex(o => new { o.UserId, o.CreatedAt })
+            .IsDescending(false, true);
+
         builder.Property(o => o.Status)
             .HasConversion<string>()
             .HasMaxLength(32);
 
+        builder.Property(o => o.SubTotal)
+            .HasPrecision(18, 2);
+
+        builder.Property(o => o.CouponDiscountAmount)
+            .HasPrecision(18, 2);
+
+        builder.Property(o => o.RankDiscountAmount)
+            .HasPrecision(18, 2);
+
         builder.Property(o => o.TotalAmount)
             .HasPrecision(18, 2);
+
+        builder.Property(o => o.ShippingRecipientName)
+            .IsRequired()
+            .HasMaxLength(150);
+
+        builder.Property(o => o.ShippingPhone)
+            .IsRequired()
+            .HasMaxLength(20);
+
+        builder.Property(o => o.ShippingAddress)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        builder.Property(o => o.Notes)
+            .HasMaxLength(1000);
+
+        builder.HasOne(o => o.User)
+            .WithMany()
+            .HasForeignKey(o => o.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(o => o.Items)
             .WithOne()

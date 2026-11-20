@@ -30,5 +30,6 @@ app.UseApiDocumentation();
 app.MapAuthEndpoints();
 app.MapProductEndpoints();
 app.MapCartEndpoints();
+app.MapOrderEndpoints();
 
 app.Run();

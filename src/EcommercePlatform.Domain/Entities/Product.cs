@@ -15,6 +15,7 @@ public class Product : BaseEntity
     public ProductStatus Status { get; private set; }
     public bool IsDeleted { get; private set; }
     public DateTimeOffset? DeletedAt { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
 
     public Category? Category { get; private set; }
 
