@@ -1,5 +1,5 @@
-using EcommercePlatform.Application.Common.Models; // Import PaginatedList<T>
-using EcommercePlatform.Application.Features.Products.DTOs; // Import ProductDto
+using EcommercePlatform.Application.Common.Models;
+using EcommercePlatform.Application.Features.Products.DTOs;
 using MediatR;
 
 namespace EcommercePlatform.Application.Features.Products.Queries.GetProducts;
