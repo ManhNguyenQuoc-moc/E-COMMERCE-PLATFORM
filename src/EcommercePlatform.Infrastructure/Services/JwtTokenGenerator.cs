@@ -35,7 +35,6 @@ public sealed class JwtTokenGenerator(IConfiguration configuration) : IJwtTokenG
 
         var claims = new[]
         {
-            // muốn lấy gì thì lấy ở đây 
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim("userId", userId.ToString()),
