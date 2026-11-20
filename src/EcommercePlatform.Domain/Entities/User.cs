@@ -34,8 +34,8 @@ public class User : BaseEntity
 
         AccountId = accountId;
         FullName = fullName.Trim();
-        PhoneNumber = phoneNumber?.Trim();
-        DefaultShippingAddress = defaultShippingAddress?.Trim();
+        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        DefaultShippingAddress = string.IsNullOrWhiteSpace(defaultShippingAddress) ? null : defaultShippingAddress.Trim();
         LoyaltyPoints = 0;
         Rank = UserRank.Member;
     }
@@ -50,9 +50,9 @@ public class User : BaseEntity
             throw new DomainException("Full name cannot be empty.");
 
         FullName = fullName.Trim();
-        PhoneNumber = phoneNumber?.Trim();
-        DefaultShippingAddress = defaultShippingAddress?.Trim();
-        AvatarUrl = avatarUrl?.Trim();
+        PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+        DefaultShippingAddress = string.IsNullOrWhiteSpace(defaultShippingAddress) ? null : defaultShippingAddress.Trim();
+        AvatarUrl = string.IsNullOrWhiteSpace(avatarUrl) ? null : avatarUrl.Trim();
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

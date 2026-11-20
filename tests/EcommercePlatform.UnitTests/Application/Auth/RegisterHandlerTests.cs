@@ -146,4 +146,31 @@ public sealed class RegisterHandlerTests
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command, CancellationToken.None));
         _accountRepoMock.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task Handle_Should_ThrowDomainException_When_PhoneNumberAlreadyExists()
+    {
+        var command = new RegisterCommand("john_doe", "john@example.com", "Password@123", "John Doe", "0901234567");
+
+        _accountRepoMock
+            .Setup(r => r.AnyAsync(It.IsAny<Expression<Func<Account, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        _userRepoMock
+            .Setup(r => r.AnyAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var handler = new RegisterHandler(
+            _accountRepoMock.Object,
+            _userRepoMock.Object,
+            _refreshTokenRepoMock.Object,
+            _unitOfWorkMock.Object,
+            _passwordHasherMock.Object,
+            _jwtTokenGeneratorMock.Object,
+            _mapper);
+
+        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command, CancellationToken.None));
+        _accountRepoMock.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Never);
+        _userRepoMock.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
