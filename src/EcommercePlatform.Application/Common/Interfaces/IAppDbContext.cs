@@ -10,5 +10,4 @@ public interface IAppDbContext
     DbSet<Account> Accounts { get; }
     DbSet<User> Users { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
-    DbSet<Category> Categories { get; }
 }

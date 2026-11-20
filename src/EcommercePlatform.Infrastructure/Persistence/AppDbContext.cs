@@ -17,7 +17,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Order> Orders => Set<Order>();
-    public DbSet<Category> Categories => Set<Category>();
 
     public bool HasActiveTransaction => _currentTransaction is not null;
 
