@@ -6,11 +6,14 @@ using EcommercePlatform.Domain.Exceptions;
 using MapsterMapper;
 using MediatR;
 
+using RefreshTokenEntity = EcommercePlatform.Domain.Entities.RefreshToken;
+
 namespace EcommercePlatform.Application.Features.Auth.Commands.Register;
 
 public sealed class RegisterHandler(
     IRepository<Account> accountRepository,
     IRepository<User> userRepository,
+    IRepository<RefreshTokenEntity> refreshTokenRepository,
     IUnitOfWork unitOfWork,
     IPasswordHasher passwordHasher,
     IJwtTokenGenerator jwtTokenGenerator,
@@ -42,17 +45,22 @@ public sealed class RegisterHandler(
                 request.PhoneNumber,
                 request.DefaultShippingAddress);
 
-            await accountRepository.AddAsync(account, ct);
-            await userRepository.AddAsync(user, ct);
-
-            var token = jwtTokenGenerator.GenerateToken(
+            var accessToken = jwtTokenGenerator.GenerateAccessToken(
                 user.Id,
                 account.Id,
                 account.Username,
                 account.Email,
                 account.Role);
 
-            return mapper.Map<AuthResponseDto>((account, (User?)user, token));
+            var refreshTokenResult = jwtTokenGenerator.GenerateRefreshToken();
+            var refreshTokenHash = jwtTokenGenerator.HashRefreshToken(refreshTokenResult.Token);
+            var refreshToken = new RefreshTokenEntity(account.Id, refreshTokenHash, refreshTokenResult.ExpiresAt);
+
+            await accountRepository.AddAsync(account, ct);
+            await userRepository.AddAsync(user, ct);
+            await refreshTokenRepository.AddAsync(refreshToken, ct);
+
+            return mapper.Map<AuthResponseDto>((account, (User?)user, accessToken, refreshTokenResult));
         }, cancellationToken);
     }
 }

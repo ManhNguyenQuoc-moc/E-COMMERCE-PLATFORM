@@ -9,4 +9,5 @@ public interface IAppDbContext
     DbSet<Order> Orders { get; }
     DbSet<Account> Accounts { get; }
     DbSet<User> Users { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
 }
