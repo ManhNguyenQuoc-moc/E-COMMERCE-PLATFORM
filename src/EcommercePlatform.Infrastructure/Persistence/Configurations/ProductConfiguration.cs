@@ -26,11 +26,6 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.HasIndex(p => p.Sku)
             .IsUnique();
 
-        builder.HasIndex(p => new { p.IsDeleted, p.CreatedAt })
-            .IsDescending(false, true);
-
-        builder.HasIndex(p => p.Price);
-
         builder.Property(p => p.Price)
             .HasPrecision(18, 2);
 
@@ -38,13 +33,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasConversion<string>()
             .HasMaxLength(32);
 
-        builder.HasOne(p => p.Category)
-            .WithMany(c => c.Products)
-            .HasForeignKey(p => p.CategoryId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasQueryFilter(p => !p.IsDeleted);
-
         builder.Ignore(p => p.DomainEvents);
     }
 }
+

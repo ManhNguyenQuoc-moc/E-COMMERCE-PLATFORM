@@ -70,46 +70,6 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("Accounts", (string)null);
                 });
 
-            modelBuilder.Entity("EcommercePlatform.Domain.Entities.Category", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
-
-                    b.ToTable("Categories", (string)null);
-                });
-
             modelBuilder.Entity("EcommercePlatform.Domain.Entities.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -187,22 +147,13 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -231,15 +182,8 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("Price");
-
                     b.HasIndex("Sku")
                         .IsUnique();
-
-                    b.HasIndex("IsDeleted", "CreatedAt")
-                        .IsDescending(false, true);
 
                     b.ToTable("Products", (string)null);
                 });
@@ -341,16 +285,6 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("EcommercePlatform.Domain.Entities.Product", b =>
-                {
-                    b.HasOne("EcommercePlatform.Domain.Entities.Category", "Category")
-                        .WithMany("Products")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Category");
-                });
-
             modelBuilder.Entity("EcommercePlatform.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("EcommercePlatform.Domain.Entities.Account", "Account")
@@ -378,11 +312,6 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("EcommercePlatform.Domain.Entities.Category", b =>
-                {
-                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("EcommercePlatform.Domain.Entities.Order", b =>
