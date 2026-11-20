@@ -1,4 +1,3 @@
-//nên đọc file DI để hiểu dự án
 
 using System.Text;
 using EcommercePlatform.Application.Common.Interfaces;
