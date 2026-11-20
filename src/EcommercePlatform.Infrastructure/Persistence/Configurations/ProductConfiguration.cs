@@ -38,6 +38,9 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasConversion<string>()
             .HasMaxLength(32);
 
+        builder.Property(p => p.RowVersion)
+            .IsRowVersion();
+
         builder.HasOne(p => p.Category)
             .WithMany(c => c.Products)
             .HasForeignKey(p => p.CategoryId)
