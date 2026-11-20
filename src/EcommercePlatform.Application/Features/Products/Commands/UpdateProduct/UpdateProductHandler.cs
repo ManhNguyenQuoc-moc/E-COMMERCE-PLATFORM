@@ -1,7 +1,7 @@
 using EcommercePlatform.Application.Common.Interfaces;
 using EcommercePlatform.Domain.Entities;
-using EcommercePlatform.Domain.Exceptions; // Import NotFoundException
-using MediatR; // Import IRequestHandler
+using EcommercePlatform.Domain.Exceptions;
+using MediatR;
 
 namespace EcommercePlatform.Application.Features.Products.Commands.UpdateProduct;
 
