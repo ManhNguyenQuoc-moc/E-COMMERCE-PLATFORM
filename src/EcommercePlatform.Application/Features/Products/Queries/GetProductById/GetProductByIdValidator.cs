@@ -1,12 +1,12 @@
-using FluentValidation; // Import thư viện FluentValidation
+using FluentValidation;
 
-namespace EcommercePlatform.Application.Features.Products.Queries.GetProductById; // Cùng namespace với GetProductByIdQuery
+namespace EcommercePlatform.Application.Features.Products.Queries.GetProductById;
 
-public sealed class GetProductByIdValidator : AbstractValidator<GetProductByIdQuery> // Validator kiểm tra Id khi xem chi tiết sản phẩm
+public sealed class GetProductByIdValidator : AbstractValidator<GetProductByIdQuery>
 {
-    public GetProductByIdValidator() // Khai báo rule validation
+    public GetProductByIdValidator()
     {
-        RuleFor(x => x.Id) // Kiểm tra Id sản phẩm
-            .NotEmpty().WithMessage("Product ID is required."); // Chặn Guid.Empty ngay ở pipeline trước khi query DB
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Product ID is required.");
     }
 }

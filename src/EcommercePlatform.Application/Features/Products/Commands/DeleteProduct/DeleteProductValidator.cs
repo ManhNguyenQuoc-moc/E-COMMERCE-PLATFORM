@@ -1,12 +1,12 @@
-using FluentValidation; // Import thư viện FluentValidation
+using FluentValidation;
 
-namespace EcommercePlatform.Application.Features.Products.Commands.DeleteProduct; // Cùng namespace với DeleteProductCommand
+namespace EcommercePlatform.Application.Features.Products.Commands.DeleteProduct;
 
-public sealed class DeleteProductValidator : AbstractValidator<DeleteProductCommand> // Validator kiểm tra Id xóa sản phẩm
+public sealed class DeleteProductValidator : AbstractValidator<DeleteProductCommand>
 {
-    public DeleteProductValidator() // Khai báo rule validation
+    public DeleteProductValidator()
     {
-        RuleFor(x => x.Id) // Kiểm tra Id sản phẩm cần xóa
-            .NotEmpty().WithMessage("Product ID is required."); // Chặn Guid.Empty ngay ở pipeline trước khi query DB
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Product ID is required.");
     }
 }
