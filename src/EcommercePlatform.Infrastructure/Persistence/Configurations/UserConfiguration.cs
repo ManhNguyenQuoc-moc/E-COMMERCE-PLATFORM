@@ -22,6 +22,10 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.PhoneNumber)
             .HasMaxLength(20);
 
+        builder.HasIndex(u => u.PhoneNumber)
+            .IsUnique()
+            .HasFilter("[PhoneNumber] IS NOT NULL");
+
         builder.Property(u => u.AvatarUrl)
             .HasMaxLength(500);
 

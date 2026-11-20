@@ -23,6 +23,7 @@ public sealed class RegisterHandler(
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var trimmedUsername = request.Username.Trim();
+        var normalizedPhone = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
 
         if (await accountRepository.AnyAsync(a => a.Email == normalizedEmail, cancellationToken))
         {
@@ -34,6 +35,11 @@ public sealed class RegisterHandler(
             throw new DomainException($"Username '{trimmedUsername}' is already taken.");
         }
 
+        if (normalizedPhone is not null && await userRepository.AnyAsync(u => u.PhoneNumber == normalizedPhone, cancellationToken))
+        {
+            throw new DomainException($"Phone number '{normalizedPhone}' is already registered.");
+        }
+
         var passwordHash = passwordHasher.HashPassword(request.Password);
 
         return await unitOfWork.ExecuteInTransactionAsync(async ct =>
@@ -42,7 +48,7 @@ public sealed class RegisterHandler(
             var user = new User(
                 account.Id,
                 request.FullName,
-                request.PhoneNumber,
+                normalizedPhone,
                 request.DefaultShippingAddress);
 
             var accessToken = jwtTokenGenerator.GenerateAccessToken(

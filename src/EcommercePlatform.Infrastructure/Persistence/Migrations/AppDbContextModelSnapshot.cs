@@ -73,7 +73,6 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EcommercePlatform.Domain.Entities.Cart", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("AppliedCouponId")
@@ -99,7 +98,6 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EcommercePlatform.Domain.Entities.CartItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("CartId")
@@ -385,6 +383,10 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AccountId")
                         .IsUnique();
+
+                    b.HasIndex("PhoneNumber")
+                        .IsUnique()
+                        .HasFilter("[PhoneNumber] IS NOT NULL");
 
                     b.ToTable("Users", (string)null);
                 });
