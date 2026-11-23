@@ -1,0 +1,30 @@
+{
+  "testCaseId": "TC-CART-002",
+  "module": "Task 3 - Shopping Cart",
+  "title": "Add product to shopping cart (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-AUTH-005 and TC-PROD-001 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/cart/add",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "productId": "{{productId}}",
+      "quantity": 2
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "items has 1 item with productId == {{productId}} and quantity == 2",
+      "totalItems == 2",
+      "subTotal == 640000"
+    ]
+  },
+  "saveVariables": {
+    "cartItemId": "$.items[0].id"
+  }
+}

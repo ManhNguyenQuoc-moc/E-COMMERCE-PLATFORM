@@ -79,6 +79,18 @@ public sealed class ProductTests
     }
 
     [Fact]
+    public void AdjustStock_Should_PreserveInactiveStatus_When_RestoringStock()
+    {
+        var product = new Product("Mouse", "Wireless mouse", "MOU-2", 50m, 5);
+        typeof(Product).GetProperty(nameof(Product.Status))!.SetValue(product, ProductStatus.Inactive);
+
+        product.AdjustStock(3);
+
+        Assert.Equal(8, product.StockQuantity);
+        Assert.Equal(ProductStatus.Inactive, product.Status);
+    }
+
+    [Fact]
     public void SoftDelete_Should_MarkAsDeleted_And_ThrowOnSecondCall()
     {
         var product = new Product("Keyboard", "Mechanical", "KEY-1", 120m, 4);

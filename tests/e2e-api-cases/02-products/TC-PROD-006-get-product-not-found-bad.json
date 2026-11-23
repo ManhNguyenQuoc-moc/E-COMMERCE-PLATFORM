@@ -1,0 +1,18 @@
+{
+  "testCaseId": "TC-PROD-006",
+  "module": "Task 2 - Product Catalog",
+  "title": "Get non-existent product by ID (Bad Case)",
+  "type": "BAD",
+  "request": {
+    "method": "GET",
+    "url": "{{baseUrl}}/api/v1/products/00000000-0000-0000-0000-000000000099",
+    "headers": {}
+  },
+  "expected": {
+    "statusCode": 404,
+    "assertions": [
+      "ProblemDetails status == 404",
+      "title == 'Resource Not Found'"
+    ]
+  }
+}

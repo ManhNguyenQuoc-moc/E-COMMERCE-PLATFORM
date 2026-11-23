@@ -1,0 +1,28 @@
+{
+  "testCaseId": "TC-AUTH-002",
+  "module": "Task 1 - Authentication & RBAC",
+  "title": "Register with duplicate email (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-AUTH-001 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/auth/register",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "username": "e2e_customer_02",
+      "email": "e2e.customer01@example.com",
+      "password": "Password@123",
+      "fullName": "Tran Thi Binh",
+      "phoneNumber": "0909998888"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails returned with status 400",
+      "detail contains 'already registered'"
+    ]
+  }
+}

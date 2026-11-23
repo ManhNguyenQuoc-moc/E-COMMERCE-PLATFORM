@@ -15,7 +15,8 @@ public sealed class UpdateCartItemHandler(
     IRepository<Product> productRepository,
     IRepository<Coupon> couponRepository,
     ICurrentUser currentUser,
-    IUnitOfWork unitOfWork) : IRequestHandler<UpdateCartItemCommand, CartDto>
+    IUnitOfWork unitOfWork,
+    IRepository<User>? userRepository = null) : IRequestHandler<UpdateCartItemCommand, CartDto>
 {
     public async Task<CartDto> Handle(UpdateCartItemCommand request, CancellationToken cancellationToken)
     {
@@ -49,6 +50,6 @@ public sealed class UpdateCartItemHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository);
+        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository, userRepository);
     }
 }

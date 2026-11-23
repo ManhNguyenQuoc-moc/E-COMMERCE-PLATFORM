@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-ORDER-004",
+  "module": "Task 5 - Order State Machine & Loyalty",
+  "title": "Admin attempts invalid state transition Pending -> Completed (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-ORDER-001 executed (order status is Pending)",
+  "request": {
+    "method": "PUT",
+    "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{adminAccessToken}}"
+    },
+    "body": {
+      "status": "Completed"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails status == 400",
+      "detail contains 'Cannot transition order status'"
+    ]
+  }
+}

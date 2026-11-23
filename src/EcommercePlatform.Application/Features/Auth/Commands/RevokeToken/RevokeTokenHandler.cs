@@ -6,7 +6,8 @@ namespace EcommercePlatform.Application.Features.Auth.Commands.RevokeToken;
 public sealed class RevokeTokenHandler(
     IRepository<Domain.Entities.RefreshToken> refreshTokenRepository,
     IUnitOfWork unitOfWork,
-    IJwtTokenGenerator jwtTokenGenerator) : IRequestHandler<RevokeTokenCommand>
+    IJwtTokenGenerator jwtTokenGenerator,
+    ICurrentUser currentUser) : IRequestHandler<RevokeTokenCommand>
 {
     public async Task Handle(RevokeTokenCommand request, CancellationToken cancellationToken)
     {
@@ -20,6 +21,11 @@ public sealed class RevokeTokenHandler(
         if (existingToken is null || existingToken.IsRevoked)
         {
             throw new UnauthorizedAccessException("Invalid or already revoked refresh token.");
+        }
+
+        if (currentUser.AccountGuid.HasValue && existingToken.AccountId != currentUser.AccountGuid.Value)
+        {
+            throw new UnauthorizedAccessException("You cannot revoke another user's refresh token.");
         }
 
         existingToken.Revoke();

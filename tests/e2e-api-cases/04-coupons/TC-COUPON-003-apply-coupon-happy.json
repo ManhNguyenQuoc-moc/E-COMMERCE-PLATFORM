@@ -1,0 +1,26 @@
+{
+  "testCaseId": "TC-COUPON-003",
+  "module": "Task 5 - Promotion & Loyalty",
+  "title": "Customer applies valid coupon to cart (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-CART-005 executed (subTotal >= 500000) and TC-COUPON-001 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/cart/apply-coupon",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "code": "E2ESALE10"
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "appliedCouponId == {{couponId}}",
+      "discountAmount > 0",
+      "totalAmount == subTotal - discountAmount"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "testCaseId": "TC-ORDER-003",
+  "module": "Task 4 - Order & Checkout",
+  "title": "Customer retrieves paginated order history (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-ORDER-001 executed",
+  "request": {
+    "method": "GET",
+    "url": "{{baseUrl}}/api/v1/orders?page=1&size=10",
+    "headers": {
+      "Authorization": "Bearer {{userAccessToken}}"
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "items contains order {{orderId}}",
+      "totalCount >= 1"
+    ]
+  }
+}

@@ -66,6 +66,36 @@ public sealed class GetCartHandlerTests : IDisposable
         Assert.Equal(500m, result.TotalAmount);
     }
 
+    [Fact]
+    public async Task Handle_Should_IncludeUserRankDiscount_When_UserRepositoryProvided()
+    {
+        var account = new Account("gold_user", "gold@example.com", "hashed_pwd");
+        var user = new User(account.Id, "Gold User");
+        user.AddLoyaltyPoints(500); // Gold = 5%
+        var product = new Product("Serum", "30ml", "SRM-1", 100_000m, 10);
+
+        _dbContext.Accounts.Add(account);
+        _dbContext.Users.Add(user);
+        _dbContext.Products.Add(product);
+
+        var cart = new CartEntity(user.Id);
+        cart.AddOrIncrementItem(product.Id, 2, product.StockQuantity);
+        _dbContext.Carts.Add(cart);
+        await _dbContext.SaveChangesAsync();
+
+        var currentUserMock = new Mock<ICurrentUser>();
+        currentUserMock.Setup(u => u.IsAuthenticated).Returns(true);
+        currentUserMock.Setup(u => u.UserGuid).Returns(user.Id);
+
+        var userRepository = new Repository<User>(_dbContext);
+        var handler = new GetCartHandler(_cartRepository, _couponRepository, currentUserMock.Object, userRepository);
+        var result = await handler.Handle(new GetCartQuery(), CancellationToken.None);
+
+        Assert.Equal(200_000m, result.SubTotal);
+        Assert.Equal(10_000m, result.DiscountAmount);
+        Assert.Equal(190_000m, result.TotalAmount);
+    }
+
     public void Dispose()
     {
         _dbContext.Dispose();

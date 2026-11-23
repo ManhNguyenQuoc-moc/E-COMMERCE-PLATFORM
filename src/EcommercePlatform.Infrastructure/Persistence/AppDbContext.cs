@@ -23,6 +23,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<LoyaltyPointHistory> LoyaltyPointHistories => Set<LoyaltyPointHistory>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     public bool HasActiveTransaction => _currentTransaction is not null;
 

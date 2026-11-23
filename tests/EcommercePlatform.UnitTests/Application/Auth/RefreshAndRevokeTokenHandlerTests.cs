@@ -126,13 +126,35 @@ public sealed class RefreshAndRevokeTokenHandlerTests : IDisposable
         await _dbContext.SaveChangesAsync();
 
         _jwtTokenGeneratorMock.Setup(j => j.HashRefreshToken("raw_active")).Returns("active_hash");
+        var currentUserMock = new Mock<ICurrentUser>();
+        currentUserMock.Setup(u => u.AccountGuid).Returns(account.Id);
 
-        var handler = new RevokeTokenHandler(_refreshTokenRepository, _dbContext, _jwtTokenGeneratorMock.Object);
+        var handler = new RevokeTokenHandler(_refreshTokenRepository, _dbContext, _jwtTokenGeneratorMock.Object, currentUserMock.Object);
 
         await handler.Handle(new RevokeTokenCommand("raw_active"), CancellationToken.None);
 
         var updated = await _dbContext.RefreshTokens.FirstAsync(rt => rt.Id == activeToken.Id);
         Assert.True(updated.IsRevoked);
+    }
+
+    [Fact]
+    public async Task RevokeTokenHandler_Should_ThrowUnauthorized_When_RevokingAnotherUsersToken()
+    {
+        var account = new Account("john_doe", "john@example.com", "hashed_pwd");
+        var activeToken = new RefreshToken(account.Id, "active_hash", DateTimeOffset.UtcNow.AddDays(7));
+
+        _dbContext.Accounts.Add(account);
+        _dbContext.RefreshTokens.Add(activeToken);
+        await _dbContext.SaveChangesAsync();
+
+        _jwtTokenGeneratorMock.Setup(j => j.HashRefreshToken("raw_active")).Returns("active_hash");
+        var currentUserMock = new Mock<ICurrentUser>();
+        currentUserMock.Setup(u => u.AccountGuid).Returns(Guid.NewGuid());
+
+        var handler = new RevokeTokenHandler(_refreshTokenRepository, _dbContext, _jwtTokenGeneratorMock.Object, currentUserMock.Object);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            handler.Handle(new RevokeTokenCommand("raw_active"), CancellationToken.None));
     }
 
     public void Dispose()

@@ -1,0 +1,36 @@
+{
+  "testCaseId": "TC-COUPON-001",
+  "module": "Task 5 - Promotion & Loyalty",
+  "title": "Admin creates a percentage coupon (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-AUTH-006 executed (adminAccessToken)",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/admin/coupons",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{adminAccessToken}}"
+    },
+    "body": {
+      "code": "E2ESALE10",
+      "discountType": "PERCENTAGE",
+      "value": 10,
+      "minOrderValue": 500000,
+      "startDate": "2026-01-01T00:00:00Z",
+      "endDate": "2027-01-01T00:00:00Z",
+      "usageLimit": 50
+    }
+  },
+  "expected": {
+    "statusCode": 201,
+    "assertions": [
+      "code == 'E2ESALE10'",
+      "discountType == 'Percentage'",
+      "usedCount == 0"
+    ]
+  },
+  "saveVariables": {
+    "couponCode": "$.code",
+    "couponId": "$.id"
+  }
+}

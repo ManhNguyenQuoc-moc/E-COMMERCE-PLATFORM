@@ -1,0 +1,27 @@
+{
+  "testCaseId": "TC-REV-003",
+  "module": "Task 6 - Product Reviews",
+  "title": "Customer submits duplicate review for same completed order (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-REV-002 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/reviews",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "productId": "{{productId}}",
+      "rating": 4,
+      "comment": "Duplicate review"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails status == 400",
+      "detail == 'You have already reviewed this product for your completed order(s).'"
+    ]
+  }
+}

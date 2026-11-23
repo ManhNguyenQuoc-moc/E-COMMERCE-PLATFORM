@@ -76,6 +76,11 @@ public sealed class CheckoutHandler(
             {
                 var product = productsById[item.ProductId];
 
+                if (product.Status is Domain.Enums.ProductStatus.Draft or Domain.Enums.ProductStatus.Inactive)
+                {
+                    throw new DomainException($"Product '{product.Name}' is not available for purchase.");
+                }
+
                 // Deduct stock on the tracked Product entity protected by SQL Server RowVersion concurrency token.
                 product.AdjustStock(-item.Quantity);
                 order.AddItem(product.Id, product.Name, product.Sku, product.Price, item.Quantity);

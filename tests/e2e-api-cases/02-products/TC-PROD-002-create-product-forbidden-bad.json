@@ -1,0 +1,29 @@
+{
+  "testCaseId": "TC-PROD-002",
+  "module": "Task 2 - Product Catalog",
+  "title": "Customer attempts to create product (Bad Case - Forbidden)",
+  "type": "BAD",
+  "preconditions": "TC-AUTH-005 executed (userAccessToken)",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/products",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "name": "Unauthorized Product",
+      "description": "Should fail",
+      "sku": "UNAUTH-001",
+      "price": 100000,
+      "stockQuantity": 5
+    }
+  },
+  "expected": {
+    "statusCode": 403,
+    "assertions": [
+      "ProblemDetails status == 403",
+      "title == 'Forbidden'"
+    ]
+  }
+}

@@ -10,6 +10,7 @@ public class RefreshToken : BaseEntity
     public DateTimeOffset ExpiresAt { get; private set; }
     public DateTimeOffset? RevokedAt { get; private set; }
     public string? ReplacedByTokenHash { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
 
     public Account? Account { get; private set; }
 

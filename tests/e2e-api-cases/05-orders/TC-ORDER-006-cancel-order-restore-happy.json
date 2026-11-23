@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-ORDER-006",
+  "module": "Task 4 & 5 - Order Cancellation",
+  "title": "Admin cancels Pending order and restores stock + coupon usage (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "Create a second order {{cancelOrderId}} in Pending status",
+  "request": {
+    "method": "PUT",
+    "url": "{{baseUrl}}/api/v1/admin/orders/{{cancelOrderId}}/status",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{adminAccessToken}}"
+    },
+    "body": {
+      "status": "Cancelled"
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "status == 'Cancelled'",
+      "Product stockQuantity restored and Coupon usedCount decremented"
+    ]
+  }
+}

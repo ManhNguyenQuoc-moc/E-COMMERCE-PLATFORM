@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-CART-006",
+  "module": "Task 3 - Shopping Cart",
+  "title": "Remove cart item by setting quantity to 0 (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "Cart has item {{cartItemId}}",
+  "request": {
+    "method": "PUT",
+    "url": "{{baseUrl}}/api/v1/cart/items/{{cartItemId}}",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "quantity": 0
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "items is empty []",
+      "totalItems == 0"
+    ]
+  }
+}

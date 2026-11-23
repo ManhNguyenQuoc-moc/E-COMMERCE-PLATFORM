@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-COUPON-004",
+  "module": "Task 5 - Promotion & Loyalty",
+  "title": "Customer applies coupon when SubTotal < MinOrderValue (Bad Case)",
+  "type": "BAD",
+  "preconditions": "Cart has 1 item with subTotal < 500000",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/cart/apply-coupon",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "code": "E2ESALE10"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails status == 400",
+      "detail contains 'Order subtotal must be at least'"
+    ]
+  }
+}

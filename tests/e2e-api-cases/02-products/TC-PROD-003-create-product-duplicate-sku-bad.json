@@ -1,0 +1,29 @@
+{
+  "testCaseId": "TC-PROD-003",
+  "module": "Task 2 - Product Catalog",
+  "title": "Admin creates product with duplicate SKU (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-PROD-001 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/products",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{adminAccessToken}}"
+    },
+    "body": {
+      "name": "Duplicate SKU Product",
+      "description": "Same SKU",
+      "sku": "e2e-srm-001",
+      "price": 200000,
+      "stockQuantity": 10
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails status == 400",
+      "detail contains 'already exists'"
+    ]
+  }
+}

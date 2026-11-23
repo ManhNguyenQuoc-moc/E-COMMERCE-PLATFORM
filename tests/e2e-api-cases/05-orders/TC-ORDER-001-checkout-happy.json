@@ -1,0 +1,33 @@
+{
+  "testCaseId": "TC-ORDER-001",
+  "module": "Task 4 - Order & Checkout",
+  "title": "Checkout cart into order with coupon and rank discount (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "Cart has items (TC-CART-005) and coupon applied (TC-COUPON-003)",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/orders/checkout",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "shippingRecipientName": "Nguyen Van An",
+      "shippingPhone": "0901234567",
+      "shippingAddress": "123 Le Loi, Quan 1, TP.HCM",
+      "notes": "Giao gio hanh chinh"
+    }
+  },
+  "expected": {
+    "statusCode": 201,
+    "assertions": [
+      "status == 'Pending'",
+      "couponId == {{couponId}}",
+      "totalAmount == subTotal - couponDiscountAmount - rankDiscountAmount",
+      "Product stockQuantity decremented, Coupon usedCount incremented, Cart is cleared"
+    ]
+  },
+  "saveVariables": {
+    "orderId": "$.id"
+  }
+}

@@ -10,11 +10,12 @@ namespace EcommercePlatform.Application.Features.Cart.Queries.GetCart;
 public sealed class GetCartHandler(
     IRepository<CartEntity> cartRepository,
     IRepository<Coupon> couponRepository,
-    ICurrentUser currentUser) : IRequestHandler<GetCartQuery, CartDto>
+    ICurrentUser currentUser,
+    IRepository<User>? userRepository = null) : IRequestHandler<GetCartQuery, CartDto>
 {
     public async Task<CartDto> Handle(GetCartQuery request, CancellationToken cancellationToken)
     {
         var userId = CartQueryHelper.RequireAuthenticatedUserId(currentUser);
-        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository);
+        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository, userRepository);
     }
 }
