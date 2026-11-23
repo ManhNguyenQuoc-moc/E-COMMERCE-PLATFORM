@@ -30,7 +30,6 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>());
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-        services.AddTransient<IEmailSender, EmailService>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 

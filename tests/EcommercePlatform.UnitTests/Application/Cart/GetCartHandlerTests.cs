@@ -13,6 +13,7 @@ public sealed class GetCartHandlerTests : IDisposable
 {
     private readonly AppDbContext _dbContext;
     private readonly IRepository<CartEntity> _cartRepository;
+    private readonly IRepository<Coupon> _couponRepository;
     private readonly Mock<ICurrentUser> _currentUserMock = new();
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -24,6 +25,7 @@ public sealed class GetCartHandlerTests : IDisposable
 
         _dbContext = new AppDbContext(options);
         _cartRepository = new Repository<CartEntity>(_dbContext);
+        _couponRepository = new Repository<Coupon>(_dbContext);
 
         _currentUserMock.Setup(u => u.IsAuthenticated).Returns(true);
         _currentUserMock.Setup(u => u.UserGuid).Returns(_userId);
@@ -32,7 +34,7 @@ public sealed class GetCartHandlerTests : IDisposable
     [Fact]
     public async Task Handle_Should_ReturnEmptyCart_When_UserHasNoCartYet()
     {
-        var handler = new GetCartHandler(_cartRepository, _currentUserMock.Object);
+        var handler = new GetCartHandler(_cartRepository, _couponRepository, _currentUserMock.Object);
 
         var result = await handler.Handle(new GetCartQuery(), CancellationToken.None);
 
@@ -55,7 +57,7 @@ public sealed class GetCartHandlerTests : IDisposable
         _dbContext.Carts.Add(cart);
         await _dbContext.SaveChangesAsync();
 
-        var handler = new GetCartHandler(_cartRepository, _currentUserMock.Object);
+        var handler = new GetCartHandler(_cartRepository, _couponRepository, _currentUserMock.Object);
         var result = await handler.Handle(new GetCartQuery(), CancellationToken.None);
 
         Assert.Equal(2, result.Items.Count);

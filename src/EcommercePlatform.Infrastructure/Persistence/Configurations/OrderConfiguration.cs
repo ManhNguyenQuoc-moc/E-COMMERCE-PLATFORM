@@ -62,7 +62,5 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             .WithOne()
             .HasForeignKey(i => i.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Ignore(o => o.DomainEvents);
     }
 }

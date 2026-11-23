@@ -31,5 +31,6 @@ app.MapAuthEndpoints();
 app.MapProductEndpoints();
 app.MapCartEndpoints();
 app.MapOrderEndpoints();
+app.MapAdminEndpoints();
 
 app.Run();

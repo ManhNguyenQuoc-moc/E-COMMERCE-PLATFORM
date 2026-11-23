@@ -36,6 +36,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<string>()
             .HasMaxLength(32);
 
-        builder.Ignore(u => u.DomainEvents);
+        builder.Property(u => u.RowVersion)
+            .IsRowVersion();
     }
 }

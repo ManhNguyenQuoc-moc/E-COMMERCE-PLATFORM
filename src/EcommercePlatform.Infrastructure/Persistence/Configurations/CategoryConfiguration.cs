@@ -27,7 +27,5 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasMaxLength(1000);
 
         builder.HasQueryFilter(c => !c.IsDeleted);
-
-        builder.Ignore(c => c.DomainEvents);
     }
 }

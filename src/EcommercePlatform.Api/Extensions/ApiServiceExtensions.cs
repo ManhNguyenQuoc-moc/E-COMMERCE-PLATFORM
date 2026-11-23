@@ -5,7 +5,6 @@ using EcommercePlatform.Api.Services;
 using EcommercePlatform.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi;
-using Scalar.AspNetCore;
 
 namespace EcommercePlatform.Api.Extensions;
 
@@ -145,8 +144,6 @@ public static class ApiServiceExtensions
                 options.EnableFilter();
                 options.EnablePersistAuthorization();
             });
-
-            app.MapScalarApiReference();
 
             app.MapGet("/", () => Results.Redirect("/swagger"))
                 .ExcludeFromDescription();
