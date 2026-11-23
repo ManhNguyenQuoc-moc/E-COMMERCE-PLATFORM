@@ -13,6 +13,7 @@ public class User : BaseEntity
     public string? DefaultShippingAddress { get; private set; }
     public int LoyaltyPoints { get; private set; }
     public UserRank Rank { get; private set; } = UserRank.Member;
+    public byte[] RowVersion { get; private set; } = [];
 
     public Account? Account { get; private set; }
 

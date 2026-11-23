@@ -47,7 +47,5 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasQueryFilter(p => !p.IsDeleted);
-
-        builder.Ignore(p => p.DomainEvents);
     }
 }

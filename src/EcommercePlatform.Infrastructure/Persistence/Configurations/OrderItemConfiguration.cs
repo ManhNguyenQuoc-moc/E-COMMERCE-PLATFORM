@@ -33,7 +33,5 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
             .WithMany()
             .HasForeignKey(i => i.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        builder.Ignore(i => i.DomainEvents);
     }
 }

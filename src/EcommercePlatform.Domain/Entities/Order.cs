@@ -101,6 +101,27 @@ public class Order : BaseEntity
         RecalculateTotals();
     }
 
+    public void UpdateStatus(OrderStatus newStatus)
+    {
+        if (Status == newStatus)
+            throw new DomainException($"Order is already in '{newStatus}' status.");
+
+        var isValidTransition = (Status, newStatus) switch
+        {
+            (OrderStatus.Pending, OrderStatus.Confirmed or OrderStatus.Cancelled) => true,
+            (OrderStatus.Confirmed, OrderStatus.Processing or OrderStatus.Cancelled) => true,
+            (OrderStatus.Processing, OrderStatus.Shipped or OrderStatus.Cancelled) => true,
+            (OrderStatus.Shipped, OrderStatus.Completed) => true,
+            _ => false
+        };
+
+        if (!isValidTransition)
+            throw new DomainException($"Cannot transition order status from '{Status}' to '{newStatus}'.");
+
+        Status = newStatus;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     private void RecalculateTotals()
     {
         SubTotal = _items.Sum(i => i.UnitPrice * i.Quantity);

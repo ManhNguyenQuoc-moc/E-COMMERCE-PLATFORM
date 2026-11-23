@@ -1,4 +1,6 @@
 using EcommercePlatform.Application.Features.Cart.Commands.AddToCart;
+using EcommercePlatform.Application.Features.Cart.Commands.ApplyCoupon;
+using EcommercePlatform.Application.Features.Cart.Commands.RemoveCoupon;
 using EcommercePlatform.Application.Features.Cart.Commands.UpdateCartItem;
 using EcommercePlatform.Application.Features.Cart.DTOs;
 using EcommercePlatform.Application.Features.Cart.Queries.GetCart;
@@ -56,6 +58,38 @@ public static class CartEndpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        group.MapPost("/apply-coupon", async (
+                ApplyCouponCommand command,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                var cart = await sender.Send(command, cancellationToken);
+                return TypedResults.Ok(cart);
+            })
+            .WithName("ApplyCoupon")
+            .RequireRateLimiting("CartWritePolicy")
+            .Produces<CartDto>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+        group.MapDelete("/coupon", async (
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                var cart = await sender.Send(new RemoveCouponCommand(), cancellationToken);
+                return TypedResults.Ok(cart);
+            })
+            .WithName("RemoveCoupon")
+            .RequireRateLimiting("CartWritePolicy")
+            .Produces<CartDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
         return app;

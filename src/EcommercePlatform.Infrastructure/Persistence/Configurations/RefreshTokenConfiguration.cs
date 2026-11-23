@@ -30,6 +30,5 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         builder.Ignore(rt => rt.IsRevoked);
         builder.Ignore(rt => rt.IsExpired);
         builder.Ignore(rt => rt.IsActive);
-        builder.Ignore(rt => rt.DomainEvents);
     }
 }
