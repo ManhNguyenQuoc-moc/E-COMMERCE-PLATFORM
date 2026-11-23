@@ -15,6 +15,7 @@ public sealed class CheckoutHandler(
     IRepository<Product> productRepository,
     IRepository<User> userRepository,
     IRepository<Order> orderRepository,
+    IRepository<Coupon> couponRepository,
     ICurrentUser currentUser,
     IUnitOfWork unitOfWork,
     IMapper mapper) : IRequestHandler<CheckoutCommand, OrderDto>
@@ -25,13 +26,6 @@ public sealed class CheckoutHandler(
 
         return await unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
-            var userRank = await userRepository
-                .AsQueryable(asNoTracking: true)
-                .Where(u => u.Id == userId)
-                .Select(u => (Domain.Enums.UserRank?)u.Rank)
-                .FirstOrDefaultAsync(ct)
-                ?? throw new NotFoundException(nameof(User), userId);
-
             var cart = await cartRepository
                 .AsQueryable(asNoTracking: false)
                 .IgnoreQueryFilters()
@@ -43,6 +37,14 @@ public sealed class CheckoutHandler(
                 throw new DomainException("Your cart is empty.");
             }
 
+            var userRank = await userRepository
+                .AsQueryable(asNoTracking: true)
+                .Where(u => u.Id == userId)
+                .Select(u => (Domain.Enums.UserRank?)u.Rank)
+                .FirstOrDefaultAsync(ct)
+                ?? throw new NotFoundException(nameof(User), userId);
+
+            // Order items by ProductId to avoid deadlocks when locking multiple products concurrently.
             var checkoutItems = cart.Items.OrderBy(i => i.ProductId).ToList();
             var productIds = checkoutItems.Select(i => i.ProductId).Distinct().ToList();
 
@@ -73,8 +75,20 @@ public sealed class CheckoutHandler(
                 order.AddItem(product.Id, product.Name, product.Sku, product.Price, item.Quantity);
             }
 
-            // TODO(Task 5.2): Replace hardcoded 0m with coupon discount calculation once Coupons are implemented.
-            order.ApplyDiscounts(userRank, couponDiscountAmount: 0m);
+            var couponDiscountAmount = 0m;
+            if (cart.AppliedCouponId.HasValue)
+            {
+                var coupon = await couponRepository
+                    .AsQueryable(asNoTracking: false)
+                    .FirstOrDefaultAsync(c => c.Id == cart.AppliedCouponId.Value, ct)
+                    ?? throw new DomainException("Applied coupon is no longer available.");
+
+                coupon.ValidateCanApply(order.SubTotal, DateTimeOffset.UtcNow);
+                couponDiscountAmount = coupon.CalculateDiscount(order.SubTotal);
+                coupon.IncrementUsage();
+            }
+
+            order.ApplyDiscounts(userRank, couponDiscountAmount);
 
             await orderRepository.AddAsync(order, ct);
             cart.RemoveItems(checkoutItems.Select(i => i.Id));

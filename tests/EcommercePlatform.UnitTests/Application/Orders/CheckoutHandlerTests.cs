@@ -21,6 +21,7 @@ public sealed class CheckoutHandlerTests : IDisposable
     private readonly IRepository<Product> _productRepository;
     private readonly IRepository<User> _userRepository;
     private readonly IRepository<Order> _orderRepository;
+    private readonly IRepository<Coupon> _couponRepository;
     private readonly Mock<ICurrentUser> _currentUserMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly IMapper _mapper;
@@ -37,6 +38,7 @@ public sealed class CheckoutHandlerTests : IDisposable
         _productRepository = new Repository<Product>(_dbContext);
         _userRepository = new Repository<User>(_dbContext);
         _orderRepository = new Repository<Order>(_dbContext);
+        _couponRepository = new Repository<Coupon>(_dbContext);
 
         _user = new User(Guid.NewGuid(), "Alice", "0901234567", "123 Street");
         _user.AddLoyaltyPoints(150); // Silver rank -> 2% discount
@@ -156,11 +158,75 @@ public sealed class CheckoutHandlerTests : IDisposable
             handler.Handle(new CheckoutCommand("Alice", "0901234567", "123 Street"), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Handle_Should_ApplyCouponDiscount_And_IncrementUsedCount_When_CartHasCoupon()
+    {
+        var product = new Product("Serum C", "30ml", "SER-01", 200_000m, 5);
+        _dbContext.Products.Add(product);
+
+        var coupon = new Coupon(
+            "SAVE10",
+            DiscountType.Percentage,
+            10m,
+            100_000m,
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow.AddDays(5),
+            10);
+        _dbContext.Coupons.Add(coupon);
+
+        var cart = new CartEntity(_user.Id);
+        cart.AddOrIncrementItem(product.Id, 2, product.StockQuantity);
+        cart.ApplyCoupon(coupon.Id);
+        _dbContext.Carts.Add(cart);
+        await _dbContext.SaveChangesAsync();
+
+        var handler = CreateHandler();
+        var result = await handler.Handle(new CheckoutCommand("Alice", "0901234567", "123 Street"), CancellationToken.None);
+
+        Assert.Equal(coupon.Id, result.CouponId);
+        Assert.Equal(400_000m, result.SubTotal);
+        Assert.Equal(8_000m, result.RankDiscountAmount); // 2% Silver
+        Assert.Equal(40_000m, result.CouponDiscountAmount); // 10% coupon
+        Assert.Equal(352_000m, result.TotalAmount);
+
+        var updatedCoupon = await _dbContext.Coupons.FindAsync(coupon.Id);
+        Assert.Equal(1, updatedCoupon!.UsedCount);
+    }
+
+    [Fact]
+    public async Task Handle_Should_ThrowDomainException_When_CartHasExpiredCoupon()
+    {
+        var product = new Product("Serum C", "30ml", "SER-01", 200_000m, 5);
+        _dbContext.Products.Add(product);
+
+        var expiredCoupon = new Coupon(
+            "EXPIRED10",
+            DiscountType.Percentage,
+            10m,
+            100_000m,
+            DateTimeOffset.UtcNow.AddDays(-5),
+            DateTimeOffset.UtcNow.AddDays(-1),
+            10);
+        _dbContext.Coupons.Add(expiredCoupon);
+
+        var cart = new CartEntity(_user.Id);
+        cart.AddOrIncrementItem(product.Id, 1, product.StockQuantity);
+        cart.ApplyCoupon(expiredCoupon.Id);
+        _dbContext.Carts.Add(cart);
+        await _dbContext.SaveChangesAsync();
+
+        var handler = CreateHandler();
+
+        await Assert.ThrowsAsync<DomainException>(() =>
+            handler.Handle(new CheckoutCommand("Alice", "0901234567", "123 Street"), CancellationToken.None));
+    }
+
     private CheckoutHandler CreateHandler() => new(
         _cartRepository,
         _productRepository,
         _userRepository,
         _orderRepository,
+        _couponRepository,
         _currentUserMock.Object,
         _unitOfWorkMock.Object,
         _mapper);

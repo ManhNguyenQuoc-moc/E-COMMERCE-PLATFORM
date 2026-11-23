@@ -30,7 +30,5 @@ public sealed class CartConfiguration : IEntityTypeConfiguration<Cart>
 
         builder.Navigation(c => c.Items)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        builder.Ignore(c => c.DomainEvents);
     }
 }

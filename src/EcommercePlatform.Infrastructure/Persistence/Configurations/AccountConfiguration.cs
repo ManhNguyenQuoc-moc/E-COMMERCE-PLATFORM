@@ -37,7 +37,5 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .WithOne(u => u.Account)
             .HasForeignKey<User>(u => u.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Ignore(a => a.DomainEvents);
     }
 }

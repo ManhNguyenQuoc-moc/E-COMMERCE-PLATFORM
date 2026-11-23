@@ -1,5 +1,6 @@
 using EcommercePlatform.Application.Common.Interfaces;
 using EcommercePlatform.Application.Features.Cart.DTOs;
+using EcommercePlatform.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using CartEntity = EcommercePlatform.Domain.Entities.Cart;
 
@@ -20,7 +21,8 @@ internal static class CartQueryHelper
     internal static async Task<CartDto> LoadCartDtoAsync(
         IRepository<CartEntity> cartRepository,
         Guid userId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IRepository<Coupon>? couponRepository = null)
     {
         var cartProjection = await cartRepository
             .AsQueryable(asNoTracking: true)
@@ -52,9 +54,27 @@ internal static class CartQueryHelper
 
         var totalItems = cartProjection.Items.Sum(i => i.Quantity);
         var subTotal = cartProjection.Items.Sum(i => i.LineTotal);
-        // shortcut: discountAmount tam hardcode 0m vi chua co bang Coupons, noi logic tinh giam gia khi lam Task 5.2.
         var discountAmount = 0m;
-        var totalAmount = subTotal - discountAmount;
+
+        if (cartProjection.AppliedCouponId.HasValue && couponRepository is not null && subTotal > 0m)
+        {
+            var coupon = await couponRepository
+                .AsQueryable(asNoTracking: true)
+                .FirstOrDefaultAsync(c => c.Id == cartProjection.AppliedCouponId.Value, cancellationToken);
+
+            var now = DateTimeOffset.UtcNow;
+            if (coupon is not null
+                && coupon.IsActive
+                && now >= coupon.StartDate
+                && now <= coupon.EndDate
+                && coupon.UsedCount < coupon.UsageLimit
+                && subTotal >= coupon.MinOrderValue)
+            {
+                discountAmount = coupon.CalculateDiscount(subTotal);
+            }
+        }
+
+        var totalAmount = Math.Max(0m, subTotal - discountAmount);
 
         return new CartDto(
             cartProjection.Id,

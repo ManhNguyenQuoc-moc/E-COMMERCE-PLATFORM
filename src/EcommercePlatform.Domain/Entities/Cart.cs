@@ -80,6 +80,24 @@ public class Cart : BaseEntity
         return existingItem;
     }
 
+    public void ApplyCoupon(Guid couponId)
+    {
+        if (couponId == Guid.Empty)
+            throw new DomainException("CouponId is required.");
+
+        AppliedCouponId = couponId;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void ClearCoupon()
+    {
+        if (AppliedCouponId is null)
+            return;
+
+        AppliedCouponId = null;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void RemoveItems(IEnumerable<Guid> cartItemIds)
     {
         var idSet = cartItemIds.ToHashSet();

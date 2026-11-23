@@ -27,7 +27,5 @@ public sealed class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasQueryFilter(i => !i.Product!.IsDeleted);
-
-        builder.Ignore(i => i.DomainEvents);
     }
 }
