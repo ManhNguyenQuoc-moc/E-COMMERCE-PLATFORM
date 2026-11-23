@@ -22,7 +22,7 @@ internal static class CartQueryHelper
         IRepository<CartEntity> cartRepository,
         Guid userId,
         CancellationToken cancellationToken,
-        IRepository<Coupon>? couponRepository = null)
+        IRepository<Coupon> couponRepository)
     {
         var cartProjection = await cartRepository
             .AsQueryable(asNoTracking: true)
@@ -56,7 +56,7 @@ internal static class CartQueryHelper
         var subTotal = cartProjection.Items.Sum(i => i.LineTotal);
         var discountAmount = 0m;
 
-        if (cartProjection.AppliedCouponId.HasValue && couponRepository is not null && subTotal > 0m)
+        if (cartProjection.AppliedCouponId.HasValue && subTotal > 0m)
         {
             var coupon = await couponRepository
                 .AsQueryable(asNoTracking: true)

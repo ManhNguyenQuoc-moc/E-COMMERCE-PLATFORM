@@ -16,6 +16,7 @@ public sealed class UpdateCartItemHandlerTests : IDisposable
     private readonly IRepository<CartEntity> _cartRepository;
     private readonly IRepository<CartItem> _cartItemRepository;
     private readonly IRepository<Product> _productRepository;
+    private readonly IRepository<Coupon> _couponRepository;
     private readonly Mock<ICurrentUser> _currentUserMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly Guid _userId = Guid.NewGuid();
@@ -30,6 +31,7 @@ public sealed class UpdateCartItemHandlerTests : IDisposable
         _cartRepository = new Repository<CartEntity>(_dbContext);
         _cartItemRepository = new Repository<CartItem>(_dbContext);
         _productRepository = new Repository<Product>(_dbContext);
+        _couponRepository = new Repository<Coupon>(_dbContext);
 
         _currentUserMock.Setup(u => u.IsAuthenticated).Returns(true);
         _currentUserMock.Setup(u => u.UserGuid).Returns(_userId);
@@ -51,7 +53,7 @@ public sealed class UpdateCartItemHandlerTests : IDisposable
         await _dbContext.SaveChangesAsync();
 
         var itemId = cart.Items.First().Id;
-        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
 
         var result = await handler.Handle(new UpdateCartItemCommand(itemId, 5), CancellationToken.None);
 
@@ -71,7 +73,7 @@ public sealed class UpdateCartItemHandlerTests : IDisposable
         await _dbContext.SaveChangesAsync();
 
         var itemId = cart.Items.First().Id;
-        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
 
         var result = await handler.Handle(new UpdateCartItemCommand(itemId, 0), CancellationToken.None);
 
@@ -92,7 +94,7 @@ public sealed class UpdateCartItemHandlerTests : IDisposable
         await _dbContext.SaveChangesAsync();
 
         var itemId = cart.Items.First().Id;
-        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
 
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
             new UpdateCartItemCommand(itemId, 4),
@@ -111,11 +113,42 @@ public sealed class UpdateCartItemHandlerTests : IDisposable
         await _dbContext.SaveChangesAsync();
 
         var otherItemId = otherCart.Items.First().Id;
-        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
 
         await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(
             new UpdateCartItemCommand(otherItemId, 2),
             CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Handle_Should_IncludeCouponDiscount_When_CartHasAppliedCoupon()
+    {
+        var product = new Product("Serum", "Desc", "SRM-1", 200_000m, 10);
+        var coupon = new Coupon(
+            "SAVE10",
+            EcommercePlatform.Domain.Enums.DiscountType.Percentage,
+            10m,
+            100_000m,
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow.AddDays(1),
+            100);
+        _dbContext.Products.Add(product);
+        _dbContext.Coupons.Add(coupon);
+
+        var cart = new CartEntity(_userId);
+        cart.AddOrIncrementItem(product.Id, 1, product.StockQuantity);
+        cart.ApplyCoupon(coupon.Id);
+        _dbContext.Carts.Add(cart);
+        await _dbContext.SaveChangesAsync();
+
+        var itemId = cart.Items.First().Id;
+        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+
+        var result = await handler.Handle(new UpdateCartItemCommand(itemId, 3), CancellationToken.None);
+
+        Assert.Equal(600_000m, result.SubTotal);
+        Assert.Equal(60_000m, result.DiscountAmount);
+        Assert.Equal(540_000m, result.TotalAmount);
     }
 
     public void Dispose()

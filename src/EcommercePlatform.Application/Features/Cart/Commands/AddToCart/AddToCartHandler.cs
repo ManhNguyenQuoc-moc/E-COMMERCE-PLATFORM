@@ -12,6 +12,7 @@ namespace EcommercePlatform.Application.Features.Cart.Commands.AddToCart;
 public sealed class AddToCartHandler(
     IRepository<CartEntity> cartRepository,
     IRepository<Product> productRepository,
+    IRepository<Coupon> couponRepository,
     ICurrentUser currentUser,
     IUnitOfWork unitOfWork) : IRequestHandler<AddToCartCommand, CartDto>
 {
@@ -42,6 +43,6 @@ public sealed class AddToCartHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken);
+        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository);
     }
 }

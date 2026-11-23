@@ -101,7 +101,7 @@ public sealed class CheckoutHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task Handle_Should_ThrowDomainException_When_ProductInCartIsSoftDeleted()
+    public async Task Handle_Should_ThrowDomainException_When_OnlySoftDeletedProductsAreInCart()
     {
         var product = new Product("Serum C", "30ml", "SER-01", 200_000m, 5);
         _dbContext.Products.Add(product);
@@ -116,7 +116,37 @@ public sealed class CheckoutHandlerTests : IDisposable
         var command = new CheckoutCommand("Alice", "0901234567", "123 Street");
 
         var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command, CancellationToken.None));
-        Assert.Contains("no longer available", ex.Message);
+        Assert.Contains("cart is empty", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Handle_Should_CheckoutOnlyVisibleProducts_And_ClearHiddenSoftDeletedItems()
+    {
+        var activeProduct = new Product("Toner", "150ml", "TON-01", 100_000m, 5);
+        var deletedProduct = new Product("Serum C", "30ml", "SER-01", 200_000m, 5);
+        _dbContext.Products.AddRange(activeProduct, deletedProduct);
+
+        var cart = new CartEntity(_user.Id);
+        cart.AddOrIncrementItem(activeProduct.Id, 2, activeProduct.StockQuantity);
+        cart.AddOrIncrementItem(deletedProduct.Id, 1, deletedProduct.StockQuantity);
+        _dbContext.Carts.Add(cart);
+        deletedProduct.SoftDelete();
+        await _dbContext.SaveChangesAsync();
+
+        var handler = CreateHandler();
+        var command = new CheckoutCommand("Alice", "0901234567", "123 Street");
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        var orderedItem = Assert.Single(result.Items);
+        Assert.Equal(activeProduct.Id, orderedItem.ProductId);
+        Assert.Equal(200_000m, result.SubTotal);
+
+        var remainingCartItems = await _dbContext.CartItems
+            .IgnoreQueryFilters()
+            .Where(i => i.CartId == cart.Id)
+            .ToListAsync();
+        Assert.Empty(remainingCartItems);
     }
 
     [Fact]

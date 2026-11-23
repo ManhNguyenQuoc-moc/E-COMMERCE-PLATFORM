@@ -19,6 +19,8 @@ public sealed class UpdateOrderStatusHandlerTests : IDisposable
     private readonly AppDbContext _dbContext;
     private readonly IRepository<Order> _orderRepository;
     private readonly IRepository<User> _userRepository;
+    private readonly IRepository<Product> _productRepository;
+    private readonly IRepository<Coupon> _couponRepository;
     private readonly IRepository<LoyaltyPointHistory> _historyRepository;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly IMapper _mapper;
@@ -33,6 +35,8 @@ public sealed class UpdateOrderStatusHandlerTests : IDisposable
         _dbContext = new AppDbContext(options);
         _orderRepository = new Repository<Order>(_dbContext);
         _userRepository = new Repository<User>(_dbContext);
+        _productRepository = new Repository<Product>(_dbContext);
+        _couponRepository = new Repository<Coupon>(_dbContext);
         _historyRepository = new Repository<LoyaltyPointHistory>(_dbContext);
 
         _user = new User(Guid.NewGuid(), "Alice", "0901234567", "123 Street");
@@ -69,6 +73,8 @@ public sealed class UpdateOrderStatusHandlerTests : IDisposable
         var handler = new UpdateOrderStatusHandler(
             _orderRepository,
             _userRepository,
+            _productRepository,
+            _couponRepository,
             _historyRepository,
             _unitOfWorkMock.Object,
             _mapper);
@@ -99,6 +105,8 @@ public sealed class UpdateOrderStatusHandlerTests : IDisposable
         var handler = new UpdateOrderStatusHandler(
             _orderRepository,
             _userRepository,
+            _productRepository,
+            _couponRepository,
             _historyRepository,
             _unitOfWorkMock.Object,
             _mapper);
@@ -120,6 +128,8 @@ public sealed class UpdateOrderStatusHandlerTests : IDisposable
         var handler = new UpdateOrderStatusHandler(
             _orderRepository,
             _userRepository,
+            _productRepository,
+            _couponRepository,
             _historyRepository,
             _unitOfWorkMock.Object,
             _mapper);
@@ -152,6 +162,8 @@ public sealed class UpdateOrderStatusHandlerTests : IDisposable
         var handler = new UpdateOrderStatusHandler(
             _orderRepository,
             _userRepository,
+            _productRepository,
+            _couponRepository,
             _historyRepository,
             _unitOfWorkMock.Object,
             _mapper);
@@ -189,12 +201,59 @@ public sealed class UpdateOrderStatusHandlerTests : IDisposable
         var handler = new UpdateOrderStatusHandler(
             _orderRepository,
             _userRepository,
+            _productRepository,
+            _couponRepository,
             _historyRepository,
             _unitOfWorkMock.Object,
             _mapper);
 
         await Assert.ThrowsAsync<DomainException>(() =>
             handler.Handle(new UpdateOrderStatusCommand(order.Id, targetStatus), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Handle_Should_RestoreProductStockAndCouponUsage_When_Cancelled()
+    {
+        var product = new Product("Serum C", "30ml", "SER-01", 200_000m, 2);
+        product.AdjustStock(-2); // Simulate checkout deducting all stock -> OutOfStock (0)
+        var coupon = new Coupon(
+            "SAVE10",
+            DiscountType.Percentage,
+            10m,
+            100_000m,
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow.AddDays(1),
+            10);
+        coupon.IncrementUsage();
+
+        _dbContext.Products.Add(product);
+        _dbContext.Coupons.Add(coupon);
+
+        var order = new Order(_user.Id, "ORD-CANCEL-1", "Alice", "0901234567", "123 Street", couponId: coupon.Id);
+        order.AddItem(product.Id, product.Name, product.Sku, product.Price, 2);
+        order.UpdateStatus(OrderStatus.Confirmed);
+        _dbContext.Orders.Add(order);
+        await _dbContext.SaveChangesAsync();
+
+        var handler = new UpdateOrderStatusHandler(
+            _orderRepository,
+            _userRepository,
+            _productRepository,
+            _couponRepository,
+            _historyRepository,
+            _unitOfWorkMock.Object,
+            _mapper);
+
+        var result = await handler.Handle(new UpdateOrderStatusCommand(order.Id, "Cancelled"), CancellationToken.None);
+
+        Assert.Equal("Cancelled", result.Status);
+
+        var restoredProduct = await _dbContext.Products.FindAsync(product.Id);
+        Assert.Equal(2, restoredProduct!.StockQuantity);
+        Assert.Equal(ProductStatus.Active, restoredProduct.Status);
+
+        var restoredCoupon = await _dbContext.Coupons.FindAsync(coupon.Id);
+        Assert.Equal(0, restoredCoupon!.UsedCount);
     }
 
     private static void AdvanceToShipped(Order order)

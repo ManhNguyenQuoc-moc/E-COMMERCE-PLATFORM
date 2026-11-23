@@ -53,6 +53,9 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.Notes)
             .HasMaxLength(1000);
 
+        builder.Property(o => o.RowVersion)
+            .IsRowVersion();
+
         builder.HasOne(o => o.User)
             .WithMany()
             .HasForeignKey(o => o.UserId)
