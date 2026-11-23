@@ -1,0 +1,31 @@
+{
+  "testCaseId": "TC-COUPON-002",
+  "module": "Task 5 - Promotion & Loyalty",
+  "title": "Admin creates coupon with percentage > 100 (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-AUTH-006 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/admin/coupons",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{adminAccessToken}}"
+    },
+    "body": {
+      "code": "INVALID150",
+      "discountType": "PERCENTAGE",
+      "value": 150,
+      "minOrderValue": 0,
+      "startDate": "2026-01-01T00:00:00Z",
+      "endDate": "2027-01-01T00:00:00Z",
+      "usageLimit": 10
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails title == 'Validation Failed'",
+      "errors.value contains 'cannot exceed 100'"
+    ]
+  }
+}

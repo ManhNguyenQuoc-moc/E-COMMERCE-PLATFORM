@@ -12,7 +12,8 @@ public sealed class RemoveCouponHandler(
     IRepository<CartEntity> cartRepository,
     IRepository<Coupon> couponRepository,
     ICurrentUser currentUser,
-    IUnitOfWork unitOfWork) : IRequestHandler<RemoveCouponCommand, CartDto>
+    IUnitOfWork unitOfWork,
+    IRepository<User>? userRepository = null) : IRequestHandler<RemoveCouponCommand, CartDto>
 {
     public async Task<CartDto> Handle(RemoveCouponCommand request, CancellationToken cancellationToken)
     {
@@ -28,6 +29,6 @@ public sealed class RemoveCouponHandler(
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository);
+        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository, userRepository);
     }
 }

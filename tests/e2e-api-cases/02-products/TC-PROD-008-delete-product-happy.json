@@ -1,0 +1,21 @@
+{
+  "testCaseId": "TC-PROD-008",
+  "module": "Task 2 - Product Catalog",
+  "title": "Admin soft-deletes a product (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "Create a disposable product {{disposableProductId}} first",
+  "request": {
+    "method": "DELETE",
+    "url": "{{baseUrl}}/api/v1/products/{{disposableProductId}}",
+    "headers": {
+      "Authorization": "Bearer {{adminAccessToken}}"
+    }
+  },
+  "expected": {
+    "statusCode": 204,
+    "assertions": [
+      "HTTP 204 No Content",
+      "Subsequent GET /products/{{disposableProductId}} returns 404 Not Found"
+    ]
+  }
+}

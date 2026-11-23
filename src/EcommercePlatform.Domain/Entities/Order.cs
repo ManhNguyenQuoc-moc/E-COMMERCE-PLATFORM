@@ -83,10 +83,10 @@ public class Order : BaseEntity
         RecalculateTotals();
     }
 
-    public void ApplyDiscounts(UserRank userRank, decimal couponDiscountAmount = 0m)
+    public static decimal CalculateRankDiscount(UserRank userRank, decimal subTotal)
     {
-        if (couponDiscountAmount < 0)
-            throw new DomainException("Coupon discount amount cannot be negative.");
+        if (subTotal <= 0m)
+            return 0m;
 
         var rankRate = userRank switch
         {
@@ -96,7 +96,15 @@ public class Order : BaseEntity
             _ => 0m
         };
 
-        RankDiscountAmount = Math.Round(SubTotal * rankRate, 2, MidpointRounding.AwayFromZero);
+        return Math.Round(subTotal * rankRate, 2, MidpointRounding.AwayFromZero);
+    }
+
+    public void ApplyDiscounts(UserRank userRank, decimal couponDiscountAmount = 0m)
+    {
+        if (couponDiscountAmount < 0)
+            throw new DomainException("Coupon discount amount cannot be negative.");
+
+        RankDiscountAmount = CalculateRankDiscount(userRank, SubTotal);
         var remainingAfterRank = Math.Max(0m, SubTotal - RankDiscountAmount);
         CouponDiscountAmount = Math.Min(couponDiscountAmount, remainingAfterRank);
         RecalculateTotals();

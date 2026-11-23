@@ -12,17 +12,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
-    .AddApiServices();
+    .AddApiServices(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseCors("Default");
 app.UseHttpsRedirection();
-app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseMiddleware<SecurityMiddleware>();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.UseApiDocumentation();
@@ -32,5 +32,6 @@ app.MapProductEndpoints();
 app.MapCartEndpoints();
 app.MapOrderEndpoints();
 app.MapAdminEndpoints();
+app.MapReviewEndpoints();
 
 app.Run();

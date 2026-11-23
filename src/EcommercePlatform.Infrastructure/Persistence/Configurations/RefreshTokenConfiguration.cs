@@ -22,6 +22,11 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         builder.Property(rt => rt.ReplacedByTokenHash)
             .HasMaxLength(128);
 
+        builder.Property(rt => rt.RowVersion)
+            .IsRowVersion();
+
+        builder.HasIndex(rt => new { rt.AccountId, rt.ExpiresAt });
+
         builder.HasOne(rt => rt.Account)
             .WithMany(a => a.RefreshTokens)
             .HasForeignKey(rt => rt.AccountId)

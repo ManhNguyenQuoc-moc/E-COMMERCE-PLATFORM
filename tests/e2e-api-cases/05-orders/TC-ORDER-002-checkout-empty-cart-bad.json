@@ -1,0 +1,27 @@
+{
+  "testCaseId": "TC-ORDER-002",
+  "module": "Task 4 - Order & Checkout",
+  "title": "Checkout with empty cart (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-ORDER-001 executed (cart was cleared)",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/orders/checkout",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "shippingRecipientName": "Nguyen Van An",
+      "shippingPhone": "0901234567",
+      "shippingAddress": "123 Le Loi, Quan 1, TP.HCM"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails status == 400",
+      "detail == 'Your cart is empty.'"
+    ]
+  }
+}

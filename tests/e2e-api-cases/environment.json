@@ -1,0 +1,18 @@
+{
+  "baseUrl": "https://localhost:7001",
+  "adminUsername": "admin",
+  "adminPassword": "AdminPassword@123",
+  "userId": "",
+  "userAccessToken": "",
+  "userRefreshToken": "",
+  "revokedOldRefreshToken": "",
+  "adminAccessToken": "",
+  "adminRefreshToken": "",
+  "productId": "",
+  "disposableProductId": "",
+  "cartItemId": "",
+  "couponId": "",
+  "couponCode": "",
+  "orderId": "",
+  "cancelOrderId": ""
+}

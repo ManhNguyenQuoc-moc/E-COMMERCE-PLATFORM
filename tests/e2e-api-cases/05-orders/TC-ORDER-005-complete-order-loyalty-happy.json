@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-ORDER-005",
+  "module": "Task 5 - Order State Machine & Loyalty",
+  "title": "Admin advances order to Completed (Confirmed -> Processing -> Shipped -> Completed) (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-ORDER-001 executed; execute sequentially with Confirmed, Processing, Shipped, Completed",
+  "request": {
+    "method": "PUT",
+    "url": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{adminAccessToken}}"
+    },
+    "body": {
+      "status": "Completed"
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "status == 'Completed'",
+      "Loyalty points earned (1 point per 100,000 VND) and LoyaltyPointHistory recorded"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "testCaseId": "TC-AUTH-001",
+  "module": "Task 1 - Authentication & RBAC",
+  "title": "Register new customer account (Happy Case)",
+  "type": "HAPPY",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/auth/register",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "username": "e2e_customer_01",
+      "email": "e2e.customer01@example.com",
+      "password": "Password@123",
+      "fullName": "Nguyen Van An",
+      "phoneNumber": "0901234567",
+      "defaultShippingAddress": "123 Le Loi, Quan 1, TP.HCM"
+    }
+  },
+  "expected": {
+    "statusCode": 201,
+    "assertions": [
+      "Response contains userId, accountId, accessToken, refreshToken",
+      "role == 'User'",
+      "accessTokenExpiresAt and refreshTokenExpiresAt are valid ISO timestamps in the future"
+    ]
+  },
+  "saveVariables": {
+    "userId": "$.userId",
+    "userAccessToken": "$.accessToken",
+    "userRefreshToken": "$.refreshToken"
+  }
+}

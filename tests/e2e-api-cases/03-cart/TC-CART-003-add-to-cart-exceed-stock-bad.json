@@ -1,0 +1,26 @@
+{
+  "testCaseId": "TC-CART-003",
+  "module": "Task 3 - Shopping Cart",
+  "title": "Add product exceeding available stock (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-CART-002 executed (stock is 20, cart already has 2)",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/cart/add",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "productId": "{{productId}}",
+      "quantity": 19
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails status == 400",
+      "detail contains 'Insufficient stock'"
+    ]
+  }
+}

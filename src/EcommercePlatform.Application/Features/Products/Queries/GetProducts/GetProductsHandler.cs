@@ -38,8 +38,7 @@ public sealed class GetProductsHandler(
         {
             query = query.Where(p =>
                 p.Name.Contains(keyword) ||
-                p.Sku.Contains(keyword) ||
-                p.Description.Contains(keyword));
+                p.Sku.Contains(keyword));
         }
 
         var projected = query

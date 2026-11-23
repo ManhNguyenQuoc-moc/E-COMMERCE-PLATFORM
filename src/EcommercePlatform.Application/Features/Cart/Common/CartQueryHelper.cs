@@ -1,6 +1,7 @@
 using EcommercePlatform.Application.Common.Interfaces;
 using EcommercePlatform.Application.Features.Cart.DTOs;
 using EcommercePlatform.Domain.Entities;
+using EcommercePlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using CartEntity = EcommercePlatform.Domain.Entities.Cart;
 
@@ -22,7 +23,8 @@ internal static class CartQueryHelper
         IRepository<CartEntity> cartRepository,
         Guid userId,
         CancellationToken cancellationToken,
-        IRepository<Coupon> couponRepository)
+        IRepository<Coupon> couponRepository,
+        IRepository<User>? userRepository = null)
     {
         var cartProjection = await cartRepository
             .AsQueryable(asNoTracking: true)
@@ -54,26 +56,43 @@ internal static class CartQueryHelper
 
         var totalItems = cartProjection.Items.Sum(i => i.Quantity);
         var subTotal = cartProjection.Items.Sum(i => i.LineTotal);
-        var discountAmount = 0m;
+        var couponDiscountAmount = 0m;
+        var rankDiscountAmount = 0m;
 
-        if (cartProjection.AppliedCouponId.HasValue && subTotal > 0m)
+        if (subTotal > 0m)
         {
-            var coupon = await couponRepository
-                .AsQueryable(asNoTracking: true)
-                .FirstOrDefaultAsync(c => c.Id == cartProjection.AppliedCouponId.Value, cancellationToken);
-
-            var now = DateTimeOffset.UtcNow;
-            if (coupon is not null
-                && coupon.IsActive
-                && now >= coupon.StartDate
-                && now <= coupon.EndDate
-                && coupon.UsedCount < coupon.UsageLimit
-                && subTotal >= coupon.MinOrderValue)
+            if (userRepository is not null)
             {
-                discountAmount = coupon.CalculateDiscount(subTotal);
+                var userRank = await userRepository
+                    .AsQueryable(asNoTracking: true)
+                    .Where(u => u.Id == userId)
+                    .Select(u => (UserRank?)u.Rank)
+                    .FirstOrDefaultAsync(cancellationToken) ?? UserRank.Member;
+
+                rankDiscountAmount = Order.CalculateRankDiscount(userRank, subTotal);
+            }
+
+            if (cartProjection.AppliedCouponId.HasValue)
+            {
+                var coupon = await couponRepository
+                    .AsQueryable(asNoTracking: true)
+                    .FirstOrDefaultAsync(c => c.Id == cartProjection.AppliedCouponId.Value, cancellationToken);
+
+                var now = DateTimeOffset.UtcNow;
+                if (coupon is not null
+                    && coupon.IsActive
+                    && now >= coupon.StartDate
+                    && now <= coupon.EndDate
+                    && coupon.UsedCount < coupon.UsageLimit
+                    && subTotal >= coupon.MinOrderValue)
+                {
+                    var remainingAfterRank = Math.Max(0m, subTotal - rankDiscountAmount);
+                    couponDiscountAmount = Math.Min(coupon.CalculateDiscount(subTotal), remainingAfterRank);
+                }
             }
         }
 
+        var discountAmount = rankDiscountAmount + couponDiscountAmount;
         var totalAmount = Math.Max(0m, subTotal - discountAmount);
 
         return new CartDto(

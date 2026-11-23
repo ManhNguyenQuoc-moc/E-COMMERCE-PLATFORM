@@ -18,6 +18,9 @@ public sealed class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
         builder.Property(i => i.Quantity)
             .IsRequired();
 
+        builder.Property(i => i.RowVersion)
+            .IsRowVersion();
+
         builder.HasIndex(i => new { i.CartId, i.ProductId })
             .IsUnique();
 

@@ -7,6 +7,7 @@ internal sealed class CurrentUser(IHttpContextAccessor httpContextAccessor) : IC
 {
     public string? UserId => httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
     public Guid? UserGuid => Guid.TryParse(UserId, out var id) ? id : null;
+    public Guid? AccountGuid => Guid.TryParse(httpContextAccessor.HttpContext?.User.FindFirstValue("accountId"), out var id) ? id : null;
     public string? Email => httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Email);
     public string? Role => httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Role);
     public bool IsAuthenticated => httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;

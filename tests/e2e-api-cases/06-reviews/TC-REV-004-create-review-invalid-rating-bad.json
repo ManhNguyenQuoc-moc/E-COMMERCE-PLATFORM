@@ -1,0 +1,27 @@
+{
+  "testCaseId": "TC-REV-004",
+  "module": "Task 6 - Product Reviews",
+  "title": "Customer submits review with invalid rating (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-AUTH-005 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/reviews",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "productId": "{{productId}}",
+      "rating": 6,
+      "comment": "Out of range rating"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails title == 'Validation Failed'",
+      "errors.rating contains 'between 1 and 5'"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "testCaseId": "TC-AUTH-006",
+  "module": "Task 1 - Authentication & RBAC",
+  "title": "Login with Admin credentials (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "Admin account seeded in database",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/auth/login",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "emailOrUsername": "{{adminUsername}}",
+      "password": "{{adminPassword}}"
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "accessToken and refreshToken are non-empty",
+      "role == 'Admin'"
+    ]
+  },
+  "saveVariables": {
+    "adminAccessToken": "$.accessToken",
+    "adminRefreshToken": "$.refreshToken"
+  }
+}

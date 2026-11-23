@@ -6,6 +6,8 @@ using EcommercePlatform.Application.Features.Products.DTOs;
 using EcommercePlatform.Application.Features.Products.Queries.GetProductById;
 using EcommercePlatform.Application.Features.Products.Queries.GetProducts;
 using EcommercePlatform.Application.Features.Products.Commands.PatchProduct;
+using EcommercePlatform.Application.Features.Reviews.DTOs;
+using EcommercePlatform.Application.Features.Reviews.Queries.GetProductReviews;
 using MediatR;
 
 namespace EcommercePlatform.Api.Endpoints;
@@ -38,6 +40,22 @@ public static class ProductEndpoints
             .WithName("GetProductById")
             .AllowAnonymous()
             .Produces<ProductDto>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{id:guid}/reviews", async (
+                Guid id,
+                ISender sender,
+                CancellationToken cancellationToken,
+                int page = 1,
+                int size = 10) =>
+            {
+                var result = await sender.Send(new GetProductReviewsQuery(id, page, size), cancellationToken);
+                return TypedResults.Ok(result);
+            })
+            .WithName("GetProductReviews")
+            .AllowAnonymous()
+            .Produces<ProductReviewsSummaryDto>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound);
 
