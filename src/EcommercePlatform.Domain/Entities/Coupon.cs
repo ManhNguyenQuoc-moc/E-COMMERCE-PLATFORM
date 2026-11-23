@@ -94,4 +94,13 @@ public class Coupon : BaseEntity
         UsedCount++;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
+
+    public void DecrementUsage()
+    {
+        if (UsedCount <= 0)
+            return;
+
+        UsedCount--;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }

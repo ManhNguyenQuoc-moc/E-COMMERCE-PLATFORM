@@ -12,6 +12,8 @@ namespace EcommercePlatform.Application.Features.Orders.Commands.UpdateOrderStat
 public sealed class UpdateOrderStatusHandler(
     IRepository<Order> orderRepository,
     IRepository<User> userRepository,
+    IRepository<Product> productRepository,
+    IRepository<Coupon> couponRepository,
     IRepository<LoyaltyPointHistory> loyaltyPointHistoryRepository,
     IUnitOfWork unitOfWork,
     IMapper mapper) : IRequestHandler<UpdateOrderStatusCommand, OrderDto>
@@ -35,7 +37,35 @@ public sealed class UpdateOrderStatusHandler(
 
             order.UpdateStatus(targetStatus);
 
-            if (targetStatus == OrderStatus.Completed)
+            if (targetStatus == OrderStatus.Cancelled)
+            {
+                var orderedItems = order.Items.OrderBy(i => i.ProductId).ToList();
+                var productIds = orderedItems.Select(i => i.ProductId).Distinct().ToList();
+
+                var productsById = await productRepository
+                    .AsQueryable(asNoTracking: false)
+                    .IgnoreQueryFilters()
+                    .Where(p => productIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id, ct);
+
+                foreach (var item in orderedItems)
+                {
+                    if (productsById.TryGetValue(item.ProductId, out var product))
+                    {
+                        product.AdjustStock(item.Quantity);
+                    }
+                }
+
+                if (order.CouponId.HasValue)
+                {
+                    var coupon = await couponRepository
+                        .AsQueryable(asNoTracking: false)
+                        .FirstOrDefaultAsync(c => c.Id == order.CouponId.Value, ct);
+
+                    coupon?.DecrementUsage();
+                }
+            }
+            else if (targetStatus == OrderStatus.Completed)
             {
                 var pointsEarned = (int)(order.TotalAmount / AmountPerLoyaltyPoint);
                 if (pointsEarned > 0)

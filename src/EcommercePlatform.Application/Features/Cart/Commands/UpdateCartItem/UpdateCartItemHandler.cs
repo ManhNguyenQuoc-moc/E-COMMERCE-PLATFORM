@@ -13,6 +13,7 @@ public sealed class UpdateCartItemHandler(
     IRepository<CartEntity> cartRepository,
     IRepository<CartItem> cartItemRepository,
     IRepository<Product> productRepository,
+    IRepository<Coupon> couponRepository,
     ICurrentUser currentUser,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateCartItemCommand, CartDto>
 {
@@ -48,6 +49,6 @@ public sealed class UpdateCartItemHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken);
+        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository);
     }
 }
