@@ -15,6 +15,7 @@ public sealed class AddToCartHandlerTests : IDisposable
     private readonly AppDbContext _dbContext;
     private readonly IRepository<CartEntity> _cartRepository;
     private readonly IRepository<Product> _productRepository;
+    private readonly IRepository<Coupon> _couponRepository;
     private readonly Mock<ICurrentUser> _currentUserMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly Guid _userId = Guid.NewGuid();
@@ -28,6 +29,7 @@ public sealed class AddToCartHandlerTests : IDisposable
         _dbContext = new AppDbContext(options);
         _cartRepository = new Repository<CartEntity>(_dbContext);
         _productRepository = new Repository<Product>(_dbContext);
+        _couponRepository = new Repository<Coupon>(_dbContext);
 
         _currentUserMock.Setup(u => u.IsAuthenticated).Returns(true);
         _currentUserMock.Setup(u => u.UserGuid).Returns(_userId);
@@ -44,7 +46,7 @@ public sealed class AddToCartHandlerTests : IDisposable
         _dbContext.Products.Add(product);
         await _dbContext.SaveChangesAsync();
 
-        var handler = new AddToCartHandler(_cartRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new AddToCartHandler(_cartRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
 
         var firstResult = await handler.Handle(new AddToCartCommand(product.Id, 2), CancellationToken.None);
         Assert.Equal(_userId, firstResult.UserId);
@@ -66,7 +68,7 @@ public sealed class AddToCartHandlerTests : IDisposable
         _dbContext.Products.AddRange(product1, product2);
         await _dbContext.SaveChangesAsync();
 
-        var handler = new AddToCartHandler(_cartRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new AddToCartHandler(_cartRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
 
         await handler.Handle(new AddToCartCommand(product1.Id, 1), CancellationToken.None);
         var result = await handler.Handle(new AddToCartCommand(product2.Id, 2), CancellationToken.None);
@@ -83,7 +85,7 @@ public sealed class AddToCartHandlerTests : IDisposable
         _dbContext.Products.Add(product);
         await _dbContext.SaveChangesAsync();
 
-        var handler = new AddToCartHandler(_cartRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new AddToCartHandler(_cartRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
         await handler.Handle(new AddToCartCommand(product.Id, 2), CancellationToken.None);
 
         await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
@@ -99,7 +101,7 @@ public sealed class AddToCartHandlerTests : IDisposable
         _dbContext.Products.Add(deleted);
         await _dbContext.SaveChangesAsync();
 
-        var handler = new AddToCartHandler(_cartRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new AddToCartHandler(_cartRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
 
         await Assert.ThrowsAsync<NotFoundException>(() => handler.Handle(
             new AddToCartCommand(Guid.NewGuid(), 1),
@@ -114,11 +116,39 @@ public sealed class AddToCartHandlerTests : IDisposable
     public async Task Handle_Should_ThrowUnauthorizedAccessException_When_UserNotAuthenticated()
     {
         _currentUserMock.Setup(u => u.IsAuthenticated).Returns(false);
-        var handler = new AddToCartHandler(_cartRepository, _productRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var handler = new AddToCartHandler(_cartRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => handler.Handle(
             new AddToCartCommand(Guid.NewGuid(), 1),
             CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Handle_Should_IncludeCouponDiscount_When_CartHasAppliedCoupon()
+    {
+        var product = new Product("Vitamin C Serum", "30ml", "SERUM-01", 200_000m, 10);
+        var coupon = new Coupon(
+            "SAVE10",
+            EcommercePlatform.Domain.Enums.DiscountType.Percentage,
+            10m,
+            100_000m,
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow.AddDays(1),
+            100);
+        _dbContext.Products.Add(product);
+        _dbContext.Coupons.Add(coupon);
+
+        var cart = new CartEntity(_userId);
+        cart.ApplyCoupon(coupon.Id);
+        _dbContext.Carts.Add(cart);
+        await _dbContext.SaveChangesAsync();
+
+        var handler = new AddToCartHandler(_cartRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+        var result = await handler.Handle(new AddToCartCommand(product.Id, 2), CancellationToken.None);
+
+        Assert.Equal(400_000m, result.SubTotal);
+        Assert.Equal(40_000m, result.DiscountAmount);
+        Assert.Equal(360_000m, result.TotalAmount);
     }
 
     public void Dispose()

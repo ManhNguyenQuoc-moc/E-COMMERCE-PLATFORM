@@ -20,6 +20,7 @@ public class Order : BaseEntity
     public string ShippingPhone { get; private set; } = string.Empty;
     public string ShippingAddress { get; private set; } = string.Empty;
     public string? Notes { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
 
     public User? User { get; private set; }
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();

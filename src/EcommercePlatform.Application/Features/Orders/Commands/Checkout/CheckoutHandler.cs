@@ -45,13 +45,22 @@ public sealed class CheckoutHandler(
                 ?? throw new NotFoundException(nameof(User), userId);
 
             // Order items by ProductId to avoid deadlocks when locking multiple products concurrently.
-            var checkoutItems = cart.Items.OrderBy(i => i.ProductId).ToList();
-            var productIds = checkoutItems.Select(i => i.ProductId).Distinct().ToList();
+            var allCartItems = cart.Items.OrderBy(i => i.ProductId).ToList();
+            var productIds = allCartItems.Select(i => i.ProductId).Distinct().ToList();
 
             var productsById = await productRepository
                 .AsQueryable(asNoTracking: false)
                 .Where(p => productIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id, ct);
+
+            var checkoutItems = allCartItems
+                .Where(i => productsById.ContainsKey(i.ProductId))
+                .ToList();
+
+            if (checkoutItems.Count == 0)
+            {
+                throw new DomainException("Your cart is empty.");
+            }
 
             var orderNumber = $"ORD-{DateTimeOffset.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
             var order = new Order(
@@ -65,10 +74,7 @@ public sealed class CheckoutHandler(
 
             foreach (var item in checkoutItems)
             {
-                if (!productsById.TryGetValue(item.ProductId, out var product))
-                {
-                    throw new DomainException("One or more products in your cart are no longer available.");
-                }
+                var product = productsById[item.ProductId];
 
                 // Deduct stock on the tracked Product entity protected by SQL Server RowVersion concurrency token.
                 product.AdjustStock(-item.Quantity);
@@ -91,7 +97,7 @@ public sealed class CheckoutHandler(
             order.ApplyDiscounts(userRank, couponDiscountAmount);
 
             await orderRepository.AddAsync(order, ct);
-            cart.RemoveItems(checkoutItems.Select(i => i.Id));
+            cart.RemoveItems(allCartItems.Select(i => i.Id));
 
             return mapper.Map<OrderDto>(order);
         }, cancellationToken);
