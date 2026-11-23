@@ -1,0 +1,23 @@
+{
+  "testCaseId": "TC-CART-001",
+  "module": "Task 3 - Shopping Cart",
+  "title": "Get empty cart for newly registered user (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-AUTH-005 executed",
+  "request": {
+    "method": "GET",
+    "url": "{{baseUrl}}/api/v1/cart",
+    "headers": {
+      "Authorization": "Bearer {{userAccessToken}}"
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "items is empty array []",
+      "totalItems == 0",
+      "subTotal == 0",
+      "totalAmount == 0"
+    ]
+  }
+}

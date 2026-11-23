@@ -1,0 +1,28 @@
+{
+  "testCaseId": "TC-AUTH-003",
+  "module": "Task 1 - Authentication & RBAC",
+  "title": "Register with duplicate phone number (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-AUTH-001 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/auth/register",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "username": "e2e_customer_03",
+      "email": "e2e.customer03@example.com",
+      "password": "Password@123",
+      "fullName": "Le Van Cuong",
+      "phoneNumber": "0901234567"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails returned with status 400",
+      "detail contains 'Phone number' and 'already registered'"
+    ]
+  }
+}

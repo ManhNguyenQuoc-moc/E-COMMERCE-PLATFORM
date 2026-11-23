@@ -74,7 +74,10 @@ public class Product : BaseEntity
             throw new DomainException($"Insufficient stock for product '{Name}'.");
 
         StockQuantity = newStock;
-        Status = StockQuantity == 0 ? ProductStatus.OutOfStock : ProductStatus.Active;
+        if (Status is ProductStatus.Active or ProductStatus.OutOfStock)
+        {
+            Status = StockQuantity == 0 ? ProductStatus.OutOfStock : ProductStatus.Active;
+        }
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

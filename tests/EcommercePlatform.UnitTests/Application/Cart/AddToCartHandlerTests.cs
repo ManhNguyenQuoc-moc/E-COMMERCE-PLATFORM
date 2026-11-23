@@ -151,6 +151,21 @@ public sealed class AddToCartHandlerTests : IDisposable
         Assert.Equal(360_000m, result.TotalAmount);
     }
 
+    [Fact]
+    public async Task Handle_Should_ThrowDomainException_When_ProductIsInactive()
+    {
+        var product = new Product("Inactive Serum", "30ml", "INACT-01", 200_000m, 10);
+        typeof(Product).GetProperty(nameof(Product.Status))!.SetValue(product, EcommercePlatform.Domain.Enums.ProductStatus.Inactive);
+        _dbContext.Products.Add(product);
+        await _dbContext.SaveChangesAsync();
+
+        var handler = new AddToCartHandler(_cartRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+
+        await Assert.ThrowsAsync<DomainException>(() => handler.Handle(
+            new AddToCartCommand(product.Id, 1),
+            CancellationToken.None));
+    }
+
     public void Dispose()
     {
         _dbContext.Dispose();

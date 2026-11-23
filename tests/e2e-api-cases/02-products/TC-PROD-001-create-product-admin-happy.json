@@ -1,0 +1,33 @@
+{
+  "testCaseId": "TC-PROD-001",
+  "module": "Task 2 - Product Catalog",
+  "title": "Admin creates a new product (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-AUTH-006 executed (adminAccessToken)",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/products",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{adminAccessToken}}"
+    },
+    "body": {
+      "name": "Vitamin C Serum 30ml",
+      "description": "Brightening facial serum with 15% Vitamin C",
+      "sku": "E2E-SRM-001",
+      "price": 350000,
+      "stockQuantity": 20,
+      "categoryId": null
+    }
+  },
+  "expected": {
+    "statusCode": 201,
+    "assertions": [
+      "Response contains generated id (Guid)",
+      "Location header points to /api/v1/products/{id}"
+    ]
+  },
+  "saveVariables": {
+    "productId": "$.id"
+  }
+}

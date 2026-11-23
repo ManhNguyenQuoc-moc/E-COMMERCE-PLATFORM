@@ -1,0 +1,24 @@
+{
+  "testCaseId": "TC-AUTH-009",
+  "module": "Task 1 - Authentication & RBAC",
+  "title": "Replay already-rotated refresh token (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-AUTH-008 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/auth/refresh-token",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "refreshToken": "{{revokedOldRefreshToken}}"
+    }
+  },
+  "expected": {
+    "statusCode": 401,
+    "assertions": [
+      "ProblemDetails status == 401",
+      "detail == 'Invalid or expired refresh token.'"
+    ]
+  }
+}

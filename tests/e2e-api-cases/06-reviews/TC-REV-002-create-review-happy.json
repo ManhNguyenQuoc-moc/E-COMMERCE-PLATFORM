@@ -1,0 +1,28 @@
+{
+  "testCaseId": "TC-REV-002",
+  "module": "Task 6 - Product Reviews",
+  "title": "Customer submits product review after order Completed (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-ORDER-005 executed (order Completed)",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/reviews",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "productId": "{{productId}}",
+      "rating": 5,
+      "comment": "San pham dung rat tot, giao hang nhanh!"
+    }
+  },
+  "expected": {
+    "statusCode": 201,
+    "assertions": [
+      "rating == 5",
+      "orderId == {{orderId}}",
+      "productId == {{productId}}"
+    ]
+  }
+}

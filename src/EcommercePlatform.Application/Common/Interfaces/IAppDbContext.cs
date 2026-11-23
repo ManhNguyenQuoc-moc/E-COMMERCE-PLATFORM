@@ -15,4 +15,5 @@ public interface IAppDbContext
     DbSet<CartItem> CartItems { get; }
     DbSet<Coupon> Coupons { get; }
     DbSet<LoyaltyPointHistory> LoyaltyPointHistories { get; }
+    DbSet<Review> Reviews { get; }
 }

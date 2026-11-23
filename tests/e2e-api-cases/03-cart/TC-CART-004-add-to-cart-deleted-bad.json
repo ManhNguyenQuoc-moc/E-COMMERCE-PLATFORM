@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-CART-004",
+  "module": "Task 3 - Shopping Cart",
+  "title": "Add soft-deleted product to cart (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-PROD-008 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/cart/add",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "productId": "{{disposableProductId}}",
+      "quantity": 1
+    }
+  },
+  "expected": {
+    "statusCode": 404,
+    "assertions": [
+      "ProblemDetails status == 404"
+    ]
+  }
+}

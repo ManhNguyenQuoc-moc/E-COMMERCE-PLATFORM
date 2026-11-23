@@ -2,6 +2,7 @@ using EcommercePlatform.Application.Common.Interfaces;
 using EcommercePlatform.Application.Features.Cart.Common;
 using EcommercePlatform.Application.Features.Cart.DTOs;
 using EcommercePlatform.Domain.Entities;
+using EcommercePlatform.Domain.Enums;
 using EcommercePlatform.Domain.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -14,18 +15,24 @@ public sealed class AddToCartHandler(
     IRepository<Product> productRepository,
     IRepository<Coupon> couponRepository,
     ICurrentUser currentUser,
-    IUnitOfWork unitOfWork) : IRequestHandler<AddToCartCommand, CartDto>
+    IUnitOfWork unitOfWork,
+    IRepository<User>? userRepository = null) : IRequestHandler<AddToCartCommand, CartDto>
 {
     public async Task<CartDto> Handle(AddToCartCommand request, CancellationToken cancellationToken)
     {
         var userId = CartQueryHelper.RequireAuthenticatedUserId(currentUser);
 
-        var availableStock = await productRepository
+        var productInfo = await productRepository
             .AsQueryable(asNoTracking: true)
             .Where(p => p.Id == request.ProductId)
-            .Select(p => (int?)p.StockQuantity)
+            .Select(p => new { p.Name, p.StockQuantity, p.Status })
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException(nameof(Product), request.ProductId);
+
+        if (productInfo.Status is ProductStatus.Draft or ProductStatus.Inactive)
+        {
+            throw new DomainException($"Product '{productInfo.Name}' is not available for purchase.");
+        }
 
         var cart = await cartRepository
             .AsQueryable(asNoTracking: false)
@@ -38,11 +45,10 @@ public sealed class AddToCartHandler(
             await cartRepository.AddAsync(cart, cancellationToken);
         }
 
-        // shortcut: CartItem chua co RowVersion nen 2 request AddToCart song song tren cung san pham co the bi last-write-wins, bo sung RowVersion o Task 4.0 khi them concurrency token cho Product.
-        cart.AddOrIncrementItem(request.ProductId, request.Quantity, availableStock);
+        cart.AddOrIncrementItem(request.ProductId, request.Quantity, productInfo.StockQuantity);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository);
+        return await CartQueryHelper.LoadCartDtoAsync(cartRepository, userId, cancellationToken, couponRepository, userRepository);
     }
 }

@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-AUTH-010",
+  "module": "Task 1 - Authentication & RBAC",
+  "title": "Logout and revoke another user's refresh token (Bad Case)",
+  "type": "BAD",
+  "preconditions": "TC-AUTH-006 and TC-AUTH-008 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/auth/logout",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "refreshToken": "{{adminRefreshToken}}"
+    }
+  },
+  "expected": {
+    "statusCode": 401,
+    "assertions": [
+      "ProblemDetails status == 401",
+      "detail == 'You cannot revoke another user's refresh token.'"
+    ]
+  }
+}

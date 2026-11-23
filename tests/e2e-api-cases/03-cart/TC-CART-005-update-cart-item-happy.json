@@ -1,0 +1,25 @@
+{
+  "testCaseId": "TC-CART-005",
+  "module": "Task 3 - Shopping Cart",
+  "title": "Update cart item quantity (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-CART-002 executed",
+  "request": {
+    "method": "PUT",
+    "url": "{{baseUrl}}/api/v1/cart/items/{{cartItemId}}",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "quantity": 3
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "totalItems == 3",
+      "subTotal == 960000"
+    ]
+  }
+}

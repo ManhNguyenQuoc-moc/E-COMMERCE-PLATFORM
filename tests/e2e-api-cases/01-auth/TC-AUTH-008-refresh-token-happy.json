@@ -1,0 +1,29 @@
+{
+  "testCaseId": "TC-AUTH-008",
+  "module": "Task 1 - Authentication & RBAC",
+  "title": "Rotate refresh token (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-AUTH-005 executed",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/auth/refresh-token",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "refreshToken": "{{userRefreshToken}}"
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "New accessToken and refreshToken returned",
+      "New refreshToken != old userRefreshToken"
+    ]
+  },
+  "saveVariables": {
+    "revokedOldRefreshToken": "{{userRefreshToken}}",
+    "userAccessToken": "$.accessToken",
+    "userRefreshToken": "$.refreshToken"
+  }
+}

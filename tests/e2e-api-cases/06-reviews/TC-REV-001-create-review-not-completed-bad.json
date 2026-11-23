@@ -1,0 +1,27 @@
+{
+  "testCaseId": "TC-REV-001",
+  "module": "Task 6 - Product Reviews",
+  "title": "Customer attempts to review product before order is Completed (Bad Case)",
+  "type": "BAD",
+  "preconditions": "Order is Pending/Confirmed/Shipped (not Completed)",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/reviews",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "productId": "{{productId}}",
+      "rating": 5,
+      "comment": "Trying to review early"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "ProblemDetails status == 400",
+      "detail == 'You can only review products from completed orders.'"
+    ]
+  }
+}

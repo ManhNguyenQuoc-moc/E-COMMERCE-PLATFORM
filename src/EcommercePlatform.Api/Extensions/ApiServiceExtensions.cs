@@ -10,9 +10,13 @@ namespace EcommercePlatform.Api.Extensions;
 
 public static class ApiServiceExtensions
 {
-    public static IServiceCollection AddApiServices(this IServiceCollection services)
+    public static IServiceCollection AddApiServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         services.AddEndpointsApiExplorer();
+        services.AddMemoryCache();
 
         services.AddOpenApi("v1", options =>
         {
@@ -82,9 +86,19 @@ public static class ApiServiceExtensions
         {
             options.AddPolicy("Default", policy =>
             {
-                policy.AllowAnyOrigin()
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
+                var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+                if (!environment.IsDevelopment() && allowedOrigins.Length > 0)
+                {
+                    policy.WithOrigins(allowedOrigins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                }
+                else
+                {
+                    policy.AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                }
             });
         });
 

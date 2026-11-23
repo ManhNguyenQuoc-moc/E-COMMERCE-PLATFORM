@@ -1,0 +1,20 @@
+{
+  "testCaseId": "TC-COUPON-005",
+  "module": "Task 5 - Promotion & Loyalty",
+  "title": "Customer removes applied coupon from cart (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-COUPON-003 executed",
+  "request": {
+    "method": "DELETE",
+    "url": "{{baseUrl}}/api/v1/cart/coupon",
+    "headers": {
+      "Authorization": "Bearer {{userAccessToken}}"
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "appliedCouponId == null"
+    ]
+  }
+}

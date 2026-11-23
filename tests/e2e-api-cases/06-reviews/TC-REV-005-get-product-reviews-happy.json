@@ -1,0 +1,21 @@
+{
+  "testCaseId": "TC-REV-005",
+  "module": "Task 6 - Product Reviews",
+  "title": "Get paginated reviews and rating summary for a product (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-REV-002 executed",
+  "request": {
+    "method": "GET",
+    "url": "{{baseUrl}}/api/v1/products/{{productId}}/reviews?page=1&size=10",
+    "headers": {}
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "productId == {{productId}}",
+      "totalReviews >= 1",
+      "averageRating == 5",
+      "reviews.items contains userFullName and comment"
+    ]
+  }
+}

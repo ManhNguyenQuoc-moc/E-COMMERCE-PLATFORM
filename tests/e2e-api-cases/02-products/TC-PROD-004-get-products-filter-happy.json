@@ -1,0 +1,20 @@
+{
+  "testCaseId": "TC-PROD-004",
+  "module": "Task 2 - Product Catalog",
+  "title": "Get paginated products with search and price filter (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-PROD-001 executed",
+  "request": {
+    "method": "GET",
+    "url": "{{baseUrl}}/api/v1/products?page=1&size=10&search=Vitamin&minPrice=100000&maxPrice=500000",
+    "headers": {}
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "items contains product with sku == 'E2E-SRM-001'",
+      "pageNumber == 1",
+      "totalCount >= 1"
+    ]
+  }
+}
