@@ -89,6 +89,8 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AppliedCouponId");
+
                     b.HasIndex("UserId")
                         .IsUnique();
 
@@ -337,6 +339,8 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CouponId");
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
@@ -606,6 +610,11 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("EcommercePlatform.Domain.Entities.Cart", b =>
                 {
+                    b.HasOne("EcommercePlatform.Domain.Entities.Coupon", null)
+                        .WithMany()
+                        .HasForeignKey("AppliedCouponId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("EcommercePlatform.Domain.Entities.User", "User")
                         .WithOne()
                         .HasForeignKey("EcommercePlatform.Domain.Entities.Cart", "UserId")
@@ -655,6 +664,11 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("EcommercePlatform.Domain.Entities.Order", b =>
                 {
+                    b.HasOne("EcommercePlatform.Domain.Entities.Coupon", null)
+                        .WithMany()
+                        .HasForeignKey("CouponId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("EcommercePlatform.Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
