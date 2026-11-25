@@ -36,6 +36,10 @@ public sealed class RefreshAndRevokeTokenHandlerTests : IDisposable
         _mapper = new Mapper(config);
 
         _unitOfWorkMock
+            .Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns<CancellationToken>(ct => _dbContext.SaveChangesAsync(ct));
+
+        _unitOfWorkMock
             .Setup(u => u.ExecuteInTransactionAsync(
                 It.IsAny<Func<CancellationToken, Task<AuthResponseDto>>>(),
                 It.IsAny<CancellationToken>()))
@@ -113,6 +117,33 @@ public sealed class RefreshAndRevokeTokenHandlerTests : IDisposable
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             handler.Handle(new RefreshTokenCommand("raw_revoked"), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task RefreshTokenHandler_Should_RevokeAllActiveTokens_When_RotatedTokenIsReused()
+    {
+        var account = new Account("john_doe", "john@example.com", "hashed_pwd");
+        var reusedOldToken = new RefreshToken(account.Id, "old_reused_hash", DateTimeOffset.UtcNow.AddDays(7));
+        reusedOldToken.Revoke("current_active_hash");
+        var currentActiveToken = new RefreshToken(account.Id, "current_active_hash", DateTimeOffset.UtcNow.AddDays(7));
+
+        _dbContext.Accounts.Add(account);
+        _dbContext.RefreshTokens.AddRange(reusedOldToken, currentActiveToken);
+        await _dbContext.SaveChangesAsync();
+
+        _jwtTokenGeneratorMock.Setup(j => j.HashRefreshToken("raw_old_reused")).Returns("old_reused_hash");
+
+        var handler = new RefreshTokenHandler(
+            _refreshTokenRepository,
+            _unitOfWorkMock.Object,
+            _jwtTokenGeneratorMock.Object,
+            _mapper);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            handler.Handle(new RefreshTokenCommand("raw_old_reused"), CancellationToken.None));
+
+        var dbCurrentActive = await _dbContext.RefreshTokens.FirstAsync(rt => rt.Id == currentActiveToken.Id);
+        Assert.True(dbCurrentActive.IsRevoked);
     }
 
     [Fact]

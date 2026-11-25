@@ -23,6 +23,22 @@ public sealed class RefreshTokenHandler(
                 .ThenInclude(a => a.User)
             .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash, cancellationToken);
 
+        if (existingToken is not null && existingToken.IsRevoked && !string.IsNullOrEmpty(existingToken.ReplacedByTokenHash))
+        {
+            var activeTokens = await refreshTokenRepository
+                .AsQueryable(asNoTracking: false)
+                .Where(rt => rt.AccountId == existingToken.AccountId && rt.RevokedAt == null)
+                .ToListAsync(cancellationToken);
+
+            foreach (var token in activeTokens)
+            {
+                token.Revoke();
+            }
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            throw new UnauthorizedAccessException("Refresh token reuse detected. All active sessions have been revoked.");
+        }
+
         if (existingToken is null || !existingToken.IsActive || existingToken.Account is null)
         {
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");
