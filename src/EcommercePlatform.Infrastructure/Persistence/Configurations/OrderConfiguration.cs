@@ -61,6 +61,11 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             .HasForeignKey(o => o.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne<Coupon>()
+            .WithMany()
+            .HasForeignKey(o => o.CouponId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasMany(o => o.Items)
             .WithOne()
             .HasForeignKey(i => i.OrderId)
