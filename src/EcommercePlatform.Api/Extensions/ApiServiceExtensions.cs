@@ -17,6 +17,10 @@ public static class ApiServiceExtensions
     {
         services.AddEndpointsApiExplorer();
         services.AddMemoryCache();
+        services.AddGrpc(options =>
+        {
+            options.EnableDetailedErrors = environment.IsDevelopment();
+        });
 
         services.AddOpenApi("v1", options =>
         {
