@@ -23,6 +23,22 @@ public sealed class RefreshTokenHandler(
                 .ThenInclude(a => a.User)
             .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash, cancellationToken);
 
+        if (existingToken is not null && existingToken.IsRevoked && !string.IsNullOrEmpty(existingToken.ReplacedByTokenHash))
+        {
+            var activeTokens = await refreshTokenRepository
+                .AsQueryable(asNoTracking: false)
+                .Where(rt => rt.AccountId == existingToken.AccountId && rt.RevokedAt == null)
+                .ToListAsync(cancellationToken);
+
+            foreach (var token in activeTokens)
+            {
+                token.Revoke();
+            }
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            throw new UnauthorizedAccessException("Refresh token reuse detected. All active sessions have been revoked.");
+        }
+
         if (existingToken is null || !existingToken.IsActive || existingToken.Account is null)
         {
             throw new UnauthorizedAccessException("Invalid or expired refresh token.");
@@ -46,17 +62,23 @@ public sealed class RefreshTokenHandler(
                 account.Role);
 
             var newRefreshTokenResult = jwtTokenGenerator.GenerateRefreshToken();
+            var effectiveExpiresAt = newRefreshTokenResult.ExpiresAt <= existingToken.AbsoluteExpiresAt
+                ? newRefreshTokenResult.ExpiresAt
+                : existingToken.AbsoluteExpiresAt;
+            var effectiveRefreshTokenResult = new GeneratedTokenResult(newRefreshTokenResult.Token, effectiveExpiresAt);
+
             var newRefreshTokenHash = jwtTokenGenerator.HashRefreshToken(newRefreshTokenResult.Token);
             var newRefreshToken = new Domain.Entities.RefreshToken(
                 account.Id,
                 newRefreshTokenHash,
-                newRefreshTokenResult.ExpiresAt);
+                effectiveExpiresAt,
+                existingToken.AbsoluteExpiresAt);
 
             existingToken.Revoke(newRefreshTokenHash);
             refreshTokenRepository.Update(existingToken);
             await refreshTokenRepository.AddAsync(newRefreshToken, ct);
 
-            return mapper.Map<AuthResponseDto>((account, account.User, newAccessToken, newRefreshTokenResult));
+            return mapper.Map<AuthResponseDto>((account, account.User, newAccessToken, effectiveRefreshTokenResult));
         }, cancellationToken);
     }
 }
