@@ -151,6 +151,84 @@ public sealed class UpdateCartItemHandlerTests : IDisposable
         Assert.Equal(540_000m, result.TotalAmount);
     }
 
+    [Fact]
+    public async Task Handle_Should_AllowRemovingSoftDeletedItem_When_QuantityIsZero()
+    {
+        var activeProduct = new Product("Cleanser", "Desc", "CLN-1", 150_000m, 10);
+        var deletedProduct = new Product("Serum", "Desc", "SRM-1", 200_000m, 10);
+        _dbContext.Products.AddRange(activeProduct, deletedProduct);
+
+        var cart = new CartEntity(_userId);
+        cart.AddOrIncrementItem(activeProduct.Id, 1, activeProduct.StockQuantity);
+        cart.AddOrIncrementItem(deletedProduct.Id, 2, deletedProduct.StockQuantity);
+        _dbContext.Carts.Add(cart);
+        deletedProduct.SoftDelete();
+        await _dbContext.SaveChangesAsync();
+
+        var deletedCartItemId = cart.Items.Single(i => i.ProductId == deletedProduct.Id).Id;
+        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+
+        var result = await handler.Handle(new UpdateCartItemCommand(deletedCartItemId, 0), CancellationToken.None);
+
+        var remaining = Assert.Single(result.Items);
+        Assert.Equal(activeProduct.Id, remaining.ProductId);
+        Assert.Equal(150_000m, result.SubTotal);
+    }
+
+    [Fact]
+    public async Task Handle_Should_ThrowDomainException_When_IncreasingQuantityOfSoftDeletedProduct()
+    {
+        var deletedProduct = new Product("Serum", "Desc", "SRM-1", 200_000m, 10);
+        _dbContext.Products.Add(deletedProduct);
+
+        var cart = new CartEntity(_userId);
+        cart.AddOrIncrementItem(deletedProduct.Id, 1, deletedProduct.StockQuantity);
+        _dbContext.Carts.Add(cart);
+        deletedProduct.SoftDelete();
+        await _dbContext.SaveChangesAsync();
+
+        var itemId = cart.Items.First().Id;
+        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() =>
+            handler.Handle(new UpdateCartItemCommand(itemId, 3), CancellationToken.None));
+        Assert.Contains("remove it from your cart", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Handle_Should_ThrowDomainException_When_RemovingItemOrReducingQuantityDropsSubTotalBelowAppliedCouponMinOrderValue()
+    {
+        var activeProduct = new Product("Cleanser", "Desc", "CLN-1", 150_000m, 10);
+        var deletedProduct = new Product("Serum", "Desc", "SRM-1", 250_000m, 10);
+        var coupon = new Coupon(
+            "SAVE50K",
+            EcommercePlatform.Domain.Enums.DiscountType.FixedAmount,
+            50_000m,
+            300_000m,
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow.AddDays(5),
+            100);
+        _dbContext.Products.AddRange(activeProduct, deletedProduct);
+        _dbContext.Coupons.Add(coupon);
+
+        var cart = new CartEntity(_userId);
+        cart.AddOrIncrementItem(activeProduct.Id, 1, activeProduct.StockQuantity);
+        cart.AddOrIncrementItem(deletedProduct.Id, 1, deletedProduct.StockQuantity);
+        cart.ApplyCoupon(coupon.Id);
+        _dbContext.Carts.Add(cart);
+        deletedProduct.SoftDelete();
+        await _dbContext.SaveChangesAsync();
+
+        var deletedCartItemId = cart.Items.Single(i => i.ProductId == deletedProduct.Id).Id;
+        var handler = new UpdateCartItemHandler(_cartRepository, _cartItemRepository, _productRepository, _couponRepository, _currentUserMock.Object, _unitOfWorkMock.Object);
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() =>
+            handler.Handle(new UpdateCartItemCommand(deletedCartItemId, 0), CancellationToken.None));
+
+        Assert.Contains("SAVE50K", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("300", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     public void Dispose()
     {
         _dbContext.Dispose();

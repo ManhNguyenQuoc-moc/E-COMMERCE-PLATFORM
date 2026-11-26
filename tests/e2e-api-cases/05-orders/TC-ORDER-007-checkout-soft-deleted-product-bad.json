@@ -1,0 +1,29 @@
+{
+  "testCaseId": "TC-ORDER-007",
+  "module": "Task 4 - Order & Checkout",
+  "title": "Checkout fails with clear notification when cart contains a soft-deleted product (Bad Case)",
+  "type": "BAD",
+  "preconditions": "User has added product {{deletedProductId}} to cart, then Admin soft-deleted {{deletedProductId}} via DELETE /api/v1/products/{{deletedProductId}}",
+  "request": {
+    "method": "POST",
+    "url": "{{baseUrl}}/api/v1/orders/checkout",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "shippingRecipientName": "Nguyen Van An",
+      "shippingPhone": "0901234567",
+      "shippingAddress": "123 Le Loi, Quan 1, TP.HCM",
+      "notes": "Giao gio hanh chinh"
+    }
+  },
+  "expected": {
+    "statusCode": 400,
+    "assertions": [
+      "title == 'Bad Request'",
+      "detail contains 'has been removed and is no longer available. Please remove it from your cart before checking out.'",
+      "Order is not created and remaining items stay in cart"
+    ]
+  }
+}

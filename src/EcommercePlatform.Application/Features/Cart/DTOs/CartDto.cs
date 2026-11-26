@@ -8,7 +8,8 @@ public sealed record CartItemDto(
     decimal UnitPrice,
     int Quantity,
     decimal LineTotal,
-    int AvailableStock);
+    int AvailableStock,
+    bool IsAvailable = true);
 
 public sealed record CartDto(
     Guid Id,

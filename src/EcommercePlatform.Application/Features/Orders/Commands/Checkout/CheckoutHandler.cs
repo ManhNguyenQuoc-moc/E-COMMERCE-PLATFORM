@@ -50,17 +50,9 @@ public sealed class CheckoutHandler(
 
             var productsById = await productRepository
                 .AsQueryable(asNoTracking: false)
+                .IgnoreQueryFilters()
                 .Where(p => productIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id, ct);
-
-            var checkoutItems = allCartItems
-                .Where(i => productsById.ContainsKey(i.ProductId))
-                .ToList();
-
-            if (checkoutItems.Count == 0)
-            {
-                throw new DomainException("Your cart is empty.");
-            }
 
             var orderNumber = $"ORD-{DateTimeOffset.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
             var order = new Order(
@@ -72,13 +64,21 @@ public sealed class CheckoutHandler(
                 request.Notes,
                 cart.AppliedCouponId);
 
-            foreach (var item in checkoutItems)
+            foreach (var item in allCartItems)
             {
-                var product = productsById[item.ProductId];
+                if (!productsById.TryGetValue(item.ProductId, out var product))
+                {
+                    throw new DomainException($"Product with ID '{item.ProductId}' is no longer available. Please remove it from your cart before checking out.");
+                }
+
+                if (product.IsDeleted)
+                {
+                    throw new DomainException($"Product '{product.Name}' (SKU: {product.Sku}) has been removed and is no longer available. Please remove it from your cart before checking out.");
+                }
 
                 if (product.Status is Domain.Enums.ProductStatus.Draft or Domain.Enums.ProductStatus.Inactive)
                 {
-                    throw new DomainException($"Product '{product.Name}' is not available for purchase.");
+                    throw new DomainException($"Product '{product.Name}' is not available for purchase. Please remove it from your cart before checking out.");
                 }
 
                 // Deduct stock on the tracked Product entity protected by SQL Server RowVersion concurrency token.

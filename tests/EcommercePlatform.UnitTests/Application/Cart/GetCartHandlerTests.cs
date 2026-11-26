@@ -96,6 +96,34 @@ public sealed class GetCartHandlerTests : IDisposable
         Assert.Equal(190_000m, result.TotalAmount);
     }
 
+    [Fact]
+    public async Task Handle_Should_ShowSoftDeletedItemAsUnavailable_And_ExcludeFromSubTotal()
+    {
+        var activeProduct = new Product("Cleanser", "100ml", "CLN-01", 150_000m, 10);
+        var deletedProduct = new Product("Sunscreen", "50ml", "SUN-01", 200_000m, 8);
+        _dbContext.Products.AddRange(activeProduct, deletedProduct);
+
+        var cart = new CartEntity(_userId);
+        cart.AddOrIncrementItem(activeProduct.Id, 2, activeProduct.StockQuantity);
+        cart.AddOrIncrementItem(deletedProduct.Id, 1, deletedProduct.StockQuantity);
+        _dbContext.Carts.Add(cart);
+        deletedProduct.SoftDelete();
+        await _dbContext.SaveChangesAsync();
+
+        var handler = new GetCartHandler(_cartRepository, _couponRepository, _currentUserMock.Object);
+        var result = await handler.Handle(new GetCartQuery(), CancellationToken.None);
+
+        Assert.Equal(2, result.Items.Count);
+        var activeItem = result.Items.Single(i => i.ProductId == activeProduct.Id);
+        var unavailableItem = result.Items.Single(i => i.ProductId == deletedProduct.Id);
+
+        Assert.True(activeItem.IsAvailable);
+        Assert.False(unavailableItem.IsAvailable);
+        Assert.Equal(0, unavailableItem.AvailableStock);
+        Assert.Equal(300_000m, result.SubTotal);
+        Assert.Equal(300_000m, result.TotalAmount);
+    }
+
     public void Dispose()
     {
         _dbContext.Dispose();
