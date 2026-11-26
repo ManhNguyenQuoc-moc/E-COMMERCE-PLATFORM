@@ -1,0 +1,26 @@
+{
+  "testCaseId": "TC-CART-007",
+  "module": "Task 3 - Shopping Cart",
+  "title": "Remove soft-deleted product from cart (quantity = 0) so user can proceed to checkout (Happy Case)",
+  "type": "HAPPY",
+  "preconditions": "TC-ORDER-007 executed; GET /api/v1/cart shows item {{deletedCartItemId}} with isAvailable == false",
+  "request": {
+    "method": "PUT",
+    "url": "{{baseUrl}}/api/v1/cart/items/{{deletedCartItemId}}",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer {{userAccessToken}}"
+    },
+    "body": {
+      "quantity": 0
+    }
+  },
+  "expected": {
+    "statusCode": 200,
+    "assertions": [
+      "Soft-deleted item {{deletedCartItemId}} is removed from items",
+      "All remaining items have isAvailable == true",
+      "Subsequent POST /api/v1/orders/checkout succeeds with 201 Created"
+    ]
+  }
+}

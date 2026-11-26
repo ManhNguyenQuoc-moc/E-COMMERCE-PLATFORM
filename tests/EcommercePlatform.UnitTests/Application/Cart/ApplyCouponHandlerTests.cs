@@ -126,5 +126,37 @@ public sealed class ApplyCouponHandlerTests : IDisposable
             handler.Handle(new ApplyCouponCommand("MIN500K"), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Handle_Should_ThrowDomainException_When_CartContainsSoftDeletedProduct()
+    {
+        var activeProduct = new Product("Toner", "100ml", "TON-01", 300_000m, 10);
+        var deletedProduct = new Product("Serum", "30ml", "SER-01", 250_000m, 10);
+        _dbContext.Products.AddRange(activeProduct, deletedProduct);
+
+        var coupon = new Coupon(
+            "SAVE50K",
+            DiscountType.FixedAmount,
+            50_000m,
+            200_000m,
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow.AddDays(5),
+            10);
+        _dbContext.Coupons.Add(coupon);
+
+        var cart = new CartEntity(_userId);
+        cart.AddOrIncrementItem(activeProduct.Id, 1, activeProduct.StockQuantity);
+        cart.AddOrIncrementItem(deletedProduct.Id, 1, deletedProduct.StockQuantity);
+        _dbContext.Carts.Add(cart);
+        deletedProduct.SoftDelete();
+        await _dbContext.SaveChangesAsync();
+
+        var handler = new ApplyCouponHandler(_cartRepository, _couponRepository, _currentUserMock.Object, _dbContext);
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() =>
+            handler.Handle(new ApplyCouponCommand("SAVE50K"), CancellationToken.None));
+        Assert.Contains("Serum", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("remove it from your cart", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     public void Dispose() => _dbContext.Dispose();
 }

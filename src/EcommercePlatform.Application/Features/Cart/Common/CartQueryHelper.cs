@@ -28,6 +28,7 @@ internal static class CartQueryHelper
     {
         var cartProjection = await cartRepository
             .AsQueryable(asNoTracking: true)
+            .IgnoreQueryFilters()
             .Where(c => c.UserId == userId)
             .Select(c => new
             {
@@ -44,7 +45,8 @@ internal static class CartQueryHelper
                         i.Product.Price,
                         i.Quantity,
                         i.Product.Price * i.Quantity,
-                        i.Product.StockQuantity))
+                        i.Product.IsDeleted ? 0 : i.Product.StockQuantity,
+                        !i.Product.IsDeleted && i.Product.Status != ProductStatus.Draft && i.Product.Status != ProductStatus.Inactive))
                     .ToList()
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -55,7 +57,7 @@ internal static class CartQueryHelper
         }
 
         var totalItems = cartProjection.Items.Sum(i => i.Quantity);
-        var subTotal = cartProjection.Items.Sum(i => i.LineTotal);
+        var subTotal = cartProjection.Items.Where(i => i.IsAvailable).Sum(i => i.LineTotal);
         var couponDiscountAmount = 0m;
         var rankDiscountAmount = 0m;
 

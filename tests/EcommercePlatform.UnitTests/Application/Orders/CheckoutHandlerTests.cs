@@ -116,11 +116,12 @@ public sealed class CheckoutHandlerTests : IDisposable
         var command = new CheckoutCommand("Alice", "0901234567", "123 Street");
 
         var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command, CancellationToken.None));
-        Assert.Contains("cart is empty", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Serum C", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("remove it from your cart", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task Handle_Should_CheckoutOnlyVisibleProducts_And_ClearHiddenSoftDeletedItems()
+    public async Task Handle_Should_ThrowDomainException_When_CartContainsMixedActiveAndSoftDeletedProducts()
     {
         var activeProduct = new Product("Toner", "150ml", "TON-01", 100_000m, 5);
         var deletedProduct = new Product("Serum C", "30ml", "SER-01", 200_000m, 5);
@@ -136,17 +137,16 @@ public sealed class CheckoutHandlerTests : IDisposable
         var handler = CreateHandler();
         var command = new CheckoutCommand("Alice", "0901234567", "123 Street");
 
-        var result = await handler.Handle(command, CancellationToken.None);
-
-        var orderedItem = Assert.Single(result.Items);
-        Assert.Equal(activeProduct.Id, orderedItem.ProductId);
-        Assert.Equal(200_000m, result.SubTotal);
+        var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command, CancellationToken.None));
+        Assert.Contains("Serum C", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SER-01", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("remove it from your cart", ex.Message, StringComparison.OrdinalIgnoreCase);
 
         var remainingCartItems = await _dbContext.CartItems
             .IgnoreQueryFilters()
             .Where(i => i.CartId == cart.Id)
             .ToListAsync();
-        Assert.Empty(remainingCartItems);
+        Assert.Equal(2, remainingCartItems.Count);
     }
 
     [Fact]
