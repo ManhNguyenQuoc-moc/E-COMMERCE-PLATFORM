@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option csharp_namespace = "EcommercePlatform.Api.Grpc";
+
+package ecommerce.catalog.v1;
+
+service CatalogGrpc {
+  rpc GetProduct (GetProductRequest) returns (ProductReply);
+}
+
+message GetProductRequest {
+  string id = 1;
+}
+
+message ProductReply {
+  string id = 1;
+  string name = 2;
+  string sku = 3;
+  double price = 4;
+  int32 stock_quantity = 5;
+  string status = 6;
+  string category_name = 7;
+}

@@ -469,6 +469,9 @@ namespace EcommercePlatform.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTimeOffset>("AbsoluteExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 

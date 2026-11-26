@@ -40,4 +40,28 @@ public sealed class RefreshTokenTests
         Assert.Equal("new_hash", token.ReplacedByTokenHash);
         Assert.NotNull(token.RevokedAt);
     }
+
+    [Fact]
+    public void Constructor_Should_ClampExpiresAtToAbsoluteExpiresAt_When_ExceedingAbsoluteLimit()
+    {
+        var expiresAt = DateTimeOffset.UtcNow.AddDays(7);
+        var absoluteExpiresAt = DateTimeOffset.UtcNow.AddDays(2);
+
+        var token = new RefreshToken(Guid.NewGuid(), "clamped_hash", expiresAt, absoluteExpiresAt);
+
+        Assert.Equal(absoluteExpiresAt, token.ExpiresAt);
+        Assert.Equal(absoluteExpiresAt, token.AbsoluteExpiresAt);
+        Assert.True(token.IsActive);
+    }
+
+    [Fact]
+    public void Constructor_Should_ThrowDomainException_When_AbsoluteExpirationIsInThePast()
+    {
+        Assert.Throws<DomainException>(() =>
+            new RefreshToken(
+                Guid.NewGuid(),
+                "hashed_token",
+                DateTimeOffset.UtcNow.AddDays(7),
+                DateTimeOffset.UtcNow.AddMinutes(-1)));
+    }
 }
