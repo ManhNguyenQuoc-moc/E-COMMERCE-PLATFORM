@@ -22,7 +22,9 @@ out/
 
 # User-specific secrets & local DBs
 .env
-.env.local
+.env.*
+.env.dev
+!.env.example
 appsettings.Local.json
 secrets.json
 *.db
