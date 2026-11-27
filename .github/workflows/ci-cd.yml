@@ -1,0 +1,60 @@
+name: CI/CD Pipeline (Develop Environment)
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  # TRẠM 1: CI (Continuous Integration)
+  # Chạy tự động cho cả Pull Request và Push vào develop
+  ci-build-and-test:
+    name: Build & Run Unit Tests
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Restore Dependencies
+        run: dotnet restore EcommercePlatform.sln
+
+      - name: Build Solution
+        run: dotnet build EcommercePlatform.sln -c Release --no-restore
+
+      - name: Run Unit Tests
+        run: dotnet test EcommercePlatform.sln -c Release --no-build --verbosity normal
+
+  # TRẠM 2: CD (Continuous Deployment)
+  # Chỉ kích hoạt khi MERGE THÀNH CÔNG vào develop VÀ Trạm CI đã PASS
+  cd-deploy-dev:
+    name: Deploy to Dev Lab Environment
+    needs: ci-build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Docker Stack (Dev Environment)
+        run: |
+          echo "Starting Docker deployment for Dev environment..."
+          docker compose -p ecommerce-dev -f docker-compose.prod.yml up -d --build
+
+      - name: Verify Health Check Endpoint
+        run: |
+          echo "Waiting for services to become healthy..."
+          sleep 10
+          for i in {1..12}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5080/health || echo "000")
+            echo "Attempt $i: Health check returned HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Application is Healthy and Running on port 5080!"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Health check timed out after 60s"
+          exit 1
