@@ -34,6 +34,19 @@ jobs:
     needs: ci-build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: [self-hosted, linux]
+    env:
+      DB_NAME: "EcommercePlatformDevDb"
+      DB_USER: "sa"
+      DB_SA_PASSWORD: "${{ secrets.DB_SA_PASSWORD || 'YourStrong@Password123!' }}"
+      ConnectionStrings__Redis: "redis-dev:6379,abortConnect=false"
+      Jwt__Issuer: "EcommercePlatform.Api"
+      Jwt__Audience: "EcommercePlatform.Client"
+      Jwt__SecretKey: "${{ secrets.JWT_SECRET_KEY || 'SUPER_SECRET_DEV_KEY_AT_LEAST_32_CHARS_LONG!' }}"
+      Jwt__ExpiryMinutes: "15"
+      Jwt__RefreshTokenExpiryDays: "7"
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      CORS_ALLOWED_ORIGINS: "*"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -43,10 +56,21 @@ jobs:
           echo "Starting Docker deployment for Dev environment..."
           docker compose -p ecommerce-dev -f docker-compose.dev.yml up -d --build
 
+      - name: Wait for SQL Server & Apply EF Migrations
+        run: |
+          echo "Waiting for SQL Server container to become ready..."
+          sleep 10
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet tool install --global dotnet-ef || true
+          dotnet ef database update \
+            --project src/EcommercePlatform.Infrastructure \
+            --startup-project src/EcommercePlatform.Api \
+            --connection "Server=127.0.0.1,11433;Database=${DB_NAME};User Id=${DB_USER};Password=${DB_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False;"
+
       - name: Verify Health Check Endpoint
         run: |
           echo "Waiting for services to become healthy..."
-          sleep 10
+          sleep 5
           for i in {1..12}; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5080/health || echo "000")
             echo "Attempt $i: Health check returned HTTP $STATUS"
