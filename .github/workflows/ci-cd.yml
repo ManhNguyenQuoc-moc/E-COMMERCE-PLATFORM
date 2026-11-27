@@ -62,6 +62,7 @@ jobs:
           sleep 10
           export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet tool install --global dotnet-ef || true
+          dotnet restore EcommercePlatform.sln
           dotnet ef database update \
             --project src/EcommercePlatform.Infrastructure \
             --startup-project src/EcommercePlatform.Api \
