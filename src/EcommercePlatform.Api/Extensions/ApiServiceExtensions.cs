@@ -30,6 +30,9 @@ public static class ApiServiceExtensions
                 document.Info.Version = "v1";
                 document.Info.Description = "E-Commerce Platform Backend API (.NET 10, Clean Architecture, Minimal APIs, CQRS)";
 
+                // Clear/override servers to relative root so Swagger UI works dynamically across localhost, Cloudflare Tunnel, and custom domains
+                document.Servers = [new OpenApiServer { Url = "/" }];
+
                 document.Components ??= new OpenApiComponents();
                 document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
                 document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
@@ -91,18 +94,26 @@ public static class ApiServiceExtensions
         {
             options.AddPolicy("Default", policy =>
             {
-                var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-                if (!environment.IsDevelopment() && allowedOrigins.Length > 0)
+                var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                    ?? configuration["Cors:AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    ?? [];
+
+                var validOrigins = allowedOrigins.Where(o => !string.IsNullOrWhiteSpace(o)).ToArray();
+
+                if (validOrigins.Length > 0 && !validOrigins.Contains("*"))
                 {
-                    policy.WithOrigins(allowedOrigins)
+                    policy.WithOrigins(validOrigins)
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 }
                 else
                 {
-                    policy.AllowAnyOrigin()
+                    // Allow any origin with credentials support (reflects request origin, handles trycloudflare & local dev)
+                    policy.SetIsOriginAllowed(_ => true)
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 }
             });
         });
