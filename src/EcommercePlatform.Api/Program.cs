@@ -79,4 +79,6 @@ app.MapReviewEndpoints();
 app.MapGrpcService<CatalogGrpcService>();
 app.MapHub<NotificationHub>("/hubs/notifications");
 
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
+
 app.Run();
