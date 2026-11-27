@@ -5,4 +5,5 @@
 **/obj
 **/private-logs
 **/.env
+**/.env.*
 *.md
