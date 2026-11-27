@@ -2,98 +2,68 @@ name: CI/CD Pipeline (Develop Environment)
 
 on:
   push:
-    branches:
-      - develop
+    branches: [develop]
   pull_request:
-    branches:
-      - develop
+    branches: [develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  # TRẠM 1: CI (Continuous Integration)
-  # Chạy tự động cho cả Pull Request và Push vào develop
   ci-build-and-test:
     name: Build & Run Unit Tests
     runs-on: [self-hosted, linux]
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Build & Test
+        run: dotnet test EcommercePlatform.sln -c Release --verbosity normal
 
-      - name: Restore Dependencies
-        run: dotnet restore EcommercePlatform.sln
-
-      - name: Build Solution
-        run: dotnet build EcommercePlatform.sln -c Release --no-restore
-
-      - name: Run Unit Tests
-        run: dotnet test EcommercePlatform.sln -c Release --no-build --verbosity normal
-
-  # TRẠM 2: CD (Continuous Deployment)
-  # Chỉ kích hoạt khi MERGE THÀNH CÔNG vào develop VÀ Trạm CI đã PASS
   cd-deploy-dev:
     name: Deploy to Dev Lab Environment
     needs: ci-build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: [self-hosted, linux]
     env:
-      DB_NAME: "EcommercePlatformDevDb"
-      DB_USER: "sa"
-      DB_SA_PASSWORD: "${{ secrets.DB_SA_PASSWORD || 'YourStrong@Password123!' }}"
-      ConnectionStrings__Redis: "redis-dev:6379,abortConnect=false"
-      Jwt__Issuer: "EcommercePlatform.Api"
-      Jwt__Audience: "EcommercePlatform.Client"
-      Jwt__SecretKey: "${{ secrets.JWT_SECRET_KEY || 'SUPER_SECRET_DEV_KEY_AT_LEAST_32_CHARS_LONG!' }}"
+      DB_NAME: EcommercePlatformDevDb
+      DB_USER: sa
+      DB_SA_PASSWORD: ${{ secrets.DB_SA_PASSWORD }}
+      ConnectionStrings__Redis: redis-dev:6379,abortConnect=false
+      Jwt__Issuer: EcommercePlatform.Api
+      Jwt__Audience: EcommercePlatform.Client
+      Jwt__SecretKey: ${{ secrets.JWT_SECRET_KEY }}
       Jwt__ExpiryMinutes: "15"
       Jwt__RefreshTokenExpiryDays: "7"
-      ASPNETCORE_ENVIRONMENT: "Development"
-      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ASPNETCORE_ENVIRONMENT: Development
       CORS_ALLOWED_ORIGINS: "*"
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Deploy Docker Stack (Dev Environment)
+      - name: Load Local .env.dev Fallback if GitHub Secrets Unset
         run: |
-          echo "Starting Docker deployment for Dev environment..."
-          docker compose -p ecommerce-dev -f docker-compose.dev.yml up -d --build
+          if [ -z "$DB_SA_PASSWORD" ] && [ -f /mnt/d/MebiSoft/E-COMMERCE-PLATFORM/.env.dev ]; then
+            grep -v '^#' /mnt/d/MebiSoft/E-COMMERCE-PLATFORM/.env.dev | grep -v '^$' >> "$GITHUB_ENV"
+          fi
 
-      - name: Wait for SQL Server & Apply EF Migrations
+      - name: Deploy Docker Stack & Wait Healthy
+        run: docker compose -p ecommerce-dev -f docker-compose.dev.yml up -d --build --wait
+
+      - name: Apply EF Core Migrations
         run: |
-          echo "Waiting for SQL Server container to become ready..."
-          sleep 10
           export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet tool install --global dotnet-ef || true
-          dotnet restore EcommercePlatform.sln
           dotnet ef database update \
             --project src/EcommercePlatform.Infrastructure \
             --startup-project src/EcommercePlatform.Api \
             --connection "Server=127.0.0.1,11433;Database=${DB_NAME};User Id=${DB_USER};Password=${DB_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False;"
 
-      - name: Verify Health Check Endpoint
+      - name: Smoke Test & Print Public Tunnel URL
         run: |
-          echo "Waiting for services to become healthy..."
-          sleep 5
-          for i in {1..12}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5080/health || echo "000")
-            echo "Attempt $i: Health check returned HTTP $STATUS"
-            if [ "$STATUS" = "200" ]; then
-              echo "Application is Healthy and Running on port 5080!"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Health check timed out after 60s"
-          exit 1
-
-      - name: Print Public Cloudflare Tunnel URL
-        run: |
-          echo "Fetching Public Cloudflare Tunnel URL..."
-          sleep 5
+          curl --retry 10 --retry-delay 3 --retry-connrefused -fsS http://localhost:5080/health
           TUNNEL_URL=$(docker logs ecommerce_dev_tunnel 2>&1 | grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' | head -n 1)
-          echo "=========================================================="
           echo "LIVE PUBLIC API: $TUNNEL_URL"
-          echo "SWAGGER UI:     $TUNNEL_URL/swagger/index.html"
-          echo "HEALTH CHECK:   $TUNNEL_URL/health"
-          echo "=========================================================="
-          echo "### 🚀 Live Public API Deployment (Cloudflare Tunnel)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Swagger UI:** [Open Swagger UI]($TUNNEL_URL/swagger/index.html)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Health Check:** [Check Health]($TUNNEL_URL/health)" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### 🚀 Live Public API Deployment (Cloudflare Tunnel)"
+            echo "- **Swagger UI:** [Open Swagger UI]($TUNNEL_URL/swagger/index.html)"
+            echo "- **Health Check:** [Check Health]($TUNNEL_URL/health)"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -107,9 +107,9 @@ public static class ApiServiceExtensions
                         .AllowAnyMethod()
                         .AllowCredentials();
                 }
-                else
+                else if (environment.IsDevelopment())
                 {
-                    // Allow any origin with credentials support (reflects request origin, handles trycloudflare & local dev)
+                    // ponytail: allow dynamic tunnel/local origins in dev only; prod requires explicit Cors:AllowedOrigins
                     policy.SetIsOriginAllowed(_ => true)
                         .AllowAnyHeader()
                         .AllowAnyMethod()
