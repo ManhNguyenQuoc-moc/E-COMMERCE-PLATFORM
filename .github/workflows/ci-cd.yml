@@ -41,7 +41,7 @@ jobs:
       - name: Deploy Docker Stack (Dev Environment)
         run: |
           echo "Starting Docker deployment for Dev environment..."
-          docker compose -p ecommerce-dev -f docker-compose.prod.yml up -d --build
+          docker compose -p ecommerce-dev -f docker-compose.dev.yml up -d --build
 
       - name: Verify Health Check Endpoint
         run: |
