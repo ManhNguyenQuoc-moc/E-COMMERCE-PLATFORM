@@ -52,6 +52,7 @@ jobs:
         run: |
           export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet tool install --global dotnet-ef || true
+          dotnet restore src/EcommercePlatform.Api/EcommercePlatform.Api.csproj
           dotnet ef database update \
             --project src/EcommercePlatform.Infrastructure \
             --startup-project src/EcommercePlatform.Api \
