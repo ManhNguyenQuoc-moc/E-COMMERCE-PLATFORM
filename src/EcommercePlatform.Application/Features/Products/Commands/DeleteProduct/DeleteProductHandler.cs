@@ -7,7 +7,8 @@ namespace EcommercePlatform.Application.Features.Products.Commands.DeleteProduct
 
 public sealed class DeleteProductHandler(
     IRepository<Product> productRepository,
-    IUnitOfWork unitOfWork) : IRequestHandler<DeleteProductCommand>
+    IUnitOfWork unitOfWork,
+    ICacheService? cacheService = null) : IRequestHandler<DeleteProductCommand>
 {
     public async Task Handle(DeleteProductCommand request, CancellationToken cancellationToken)
     {
@@ -17,5 +18,11 @@ public sealed class DeleteProductHandler(
         product.SoftDelete();
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (cacheService is not null)
+        {
+            await cacheService.RemoveAsync($"products:by-id:{request.Id}", cancellationToken);
+            await cacheService.IncrementVersionAsync("products:version", cancellationToken);
+        }
     }
 }

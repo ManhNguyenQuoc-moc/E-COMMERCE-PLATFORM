@@ -57,7 +57,8 @@ public static class ApiServiceExtensions
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
-
+        services.AddSignalR();
+        services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
         services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
         {
             options.Events = new JwtBearerEvents

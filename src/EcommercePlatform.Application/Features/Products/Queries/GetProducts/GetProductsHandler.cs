@@ -10,9 +10,30 @@ namespace EcommercePlatform.Application.Features.Products.Queries.GetProducts;
 
 public sealed class GetProductsHandler(
     IRepository<Product> productRepository,
-    IMapper mapper) : IRequestHandler<GetProductsQuery, PaginatedList<ProductDto>>
+    IMapper mapper, ICacheService? cacheService = null) : IRequestHandler<GetProductsQuery, PaginatedList<ProductDto>>
 {
     public async Task<PaginatedList<ProductDto>> Handle(
+        GetProductsQuery request,
+        CancellationToken cancellationToken)
+    {
+        // Nếu không truyền cacheService (như trong các Unit Test cũ), query thẳng xuống SQL Server
+        if (cacheService is null)
+        {
+            return await QueryProductsFromDatabaseAsync(request, cancellationToken);
+        }
+
+        // Lấy version hiện tại của danh sách sản phẩm và gọi GetOrCreateAsync (có khóa SemaphoreSlim chống Cache Stampede)
+        var version = await cacheService.GetVersionAsync("products:version", cancellationToken);
+        var cacheKey = $"products:list:v{version}:p{request.Page}:s{request.Size}:c{request.CategoryId}:min{request.MinPrice}:max{request.MaxPrice}:q{request.Search?.Trim().ToLowerInvariant()}";
+
+        return await cacheService.GetOrCreateAsync(
+            cacheKey,
+            ct => QueryProductsFromDatabaseAsync(request, ct),
+            TimeSpan.FromMinutes(5),
+            cancellationToken);
+    }
+
+    private async Task<PaginatedList<ProductDto>> QueryProductsFromDatabaseAsync(
         GetProductsQuery request,
         CancellationToken cancellationToken)
     {
