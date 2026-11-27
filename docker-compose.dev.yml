@@ -1,16 +1,16 @@
 services:
-  sqlserver-prod:
+  sqlserver-dev:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: ecommerce_prod_sql
+    container_name: ecommerce_dev_sql
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${DB_SA_PASSWORD:-YourStrong@ProdPassword123!}"
+      MSSQL_SA_PASSWORD: "${DB_SA_PASSWORD:-YourStrong@DevPassword123!}"
       MSSQL_PID: "Developer"
     ports:
       - "127.0.0.1:11433:1433"
     volumes:
-      - sqlserver_prod_data:/var/opt/mssql
+      - sqlserver_dev_data:/var/opt/mssql
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
       interval: 10s
@@ -18,15 +18,15 @@ services:
       retries: 10
       start_period: 15s
 
-  redis-prod:
+  redis-dev:
     image: redis:7.4-alpine
-    container_name: ecommerce_prod_redis
+    container_name: ecommerce_dev_redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
     ports:
       - "127.0.0.1:16379:6379"
     volumes:
-      - redis_prod_data:/data
+      - redis_dev_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -34,32 +34,32 @@ services:
       retries: 5
       start_period: 5s
 
-  api-prod:
+  api-dev:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ecommerce-api:prod
-    container_name: ecommerce_prod_api
+    image: ecommerce-api:dev
+    container_name: ecommerce_dev_api
     restart: unless-stopped
     depends_on:
-      sqlserver-prod:
+      sqlserver-dev:
         condition: service_healthy
-      redis-prod:
+      redis-dev:
         condition: service_healthy
     ports:
       - "5080:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
-      ConnectionStrings__DefaultConnection: "Server=sqlserver-prod,1433;Database=EcommercePlatformProdDb;User Id=sa;Password=${DB_SA_PASSWORD:-YourStrong@ProdPassword123!};TrustServerCertificate=True;Encrypt=False;"
-      ConnectionStrings__Redis: "redis-prod:6379,abortConnect=false"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver-dev,1433;Database=EcommercePlatformDevDb;User Id=sa;Password=${DB_SA_PASSWORD:-YourStrong@DevPassword123!};TrustServerCertificate=True;Encrypt=False;"
+      ConnectionStrings__Redis: "redis-dev:6379,abortConnect=false"
       Jwt__Issuer: "EcommercePlatform.Api"
       Jwt__Audience: "EcommercePlatform.Client"
-      Jwt__SecretKey: "${JWT_SECRET_KEY:-SUPER_SECRET_PRODUCTION_KEY_AT_LEAST_32_CHARS_LONG!}"
+      Jwt__SecretKey: "${JWT_SECRET_KEY:-SUPER_SECRET_DEV_KEY_AT_LEAST_32_CHARS_LONG!}"
       Jwt__ExpiryMinutes: "15"
       Jwt__RefreshTokenExpiryDays: "7"
 
 volumes:
-  sqlserver_prod_data:
+  sqlserver_dev_data:
     driver: local
-  redis_prod_data:
+  redis_dev_data:
     driver: local
