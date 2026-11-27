@@ -58,6 +58,14 @@ services:
       Jwt__ExpiryMinutes: "15"
       Jwt__RefreshTokenExpiryDays: "7"
 
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: ecommerce_dev_tunnel
+    restart: unless-stopped
+    command: tunnel --url http://api-dev:8080
+    depends_on:
+      - api-dev
+
 volumes:
   sqlserver_dev_data:
     driver: local
