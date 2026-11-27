@@ -9,7 +9,8 @@ namespace EcommercePlatform.Application.Features.Products.Commands.CreateProduct
 public sealed class CreateProductHandler(
     IRepository<Product> productRepository,
     IRepository<Category> categoryRepository,
-    IUnitOfWork unitOfWork) : IRequestHandler<CreateProductCommand, Guid>
+    IUnitOfWork unitOfWork,
+    ICacheService? cacheService = null) : IRequestHandler<CreateProductCommand, Guid>
 {
     public async Task<Guid> Handle(CreateProductCommand request, CancellationToken cancellationToken)
     {
@@ -52,6 +53,11 @@ public sealed class CreateProductHandler(
 
         await productRepository.AddAsync(product, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (cacheService is not null)
+        {
+            await cacheService.IncrementVersionAsync("products:version", cancellationToken);
+        }
 
         return product.Id;
     }

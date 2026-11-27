@@ -1,6 +1,7 @@
 using EcommercePlatform.Application.Common.Interfaces;
 using EcommercePlatform.Application.Features.Cart.Common;
 using EcommercePlatform.Application.Features.Orders.DTOs;
+using EcommercePlatform.Application.Features.Orders.EventHandlers;
 using EcommercePlatform.Domain.Entities;
 using EcommercePlatform.Domain.Exceptions;
 using MapsterMapper;
@@ -18,13 +19,15 @@ public sealed class CheckoutHandler(
     IRepository<Coupon> couponRepository,
     ICurrentUser currentUser,
     IUnitOfWork unitOfWork,
-    IMapper mapper) : IRequestHandler<CheckoutCommand, OrderDto>
+    IMapper mapper,
+    IPublisher? publisher = null) : IRequestHandler<CheckoutCommand, OrderDto>
 {
     public async Task<OrderDto> Handle(CheckoutCommand request, CancellationToken cancellationToken)
     {
         var userId = CartQueryHelper.RequireAuthenticatedUserId(currentUser);
+        List<Guid> purchasedProductIds = [];
 
-        return await unitOfWork.ExecuteInTransactionAsync(async ct =>
+        var orderDto = await unitOfWork.ExecuteInTransactionAsync(async ct =>
         {
             var cart = await cartRepository
                 .AsQueryable(asNoTracking: false)
@@ -44,9 +47,9 @@ public sealed class CheckoutHandler(
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException(nameof(User), userId);
 
-            // Order items by ProductId to avoid deadlocks when locking multiple products concurrently.
             var allCartItems = cart.Items.OrderBy(i => i.ProductId).ToList();
             var productIds = allCartItems.Select(i => i.ProductId).Distinct().ToList();
+            purchasedProductIds = productIds;
 
             var productsById = await productRepository
                 .AsQueryable(asNoTracking: false)
@@ -81,7 +84,6 @@ public sealed class CheckoutHandler(
                     throw new DomainException($"Product '{product.Name}' is not available for purchase. Please remove it from your cart before checking out.");
                 }
 
-                // Deduct stock on the tracked Product entity protected by SQL Server RowVersion concurrency token.
                 product.AdjustStock(-item.Quantity);
                 order.AddItem(product.Id, product.Name, product.Sku, product.Price, item.Quantity);
             }
@@ -106,5 +108,22 @@ public sealed class CheckoutHandler(
 
             return mapper.Map<OrderDto>(order);
         }, cancellationToken);
+
+        // Phát sự kiện MediatR.Publish SAU KHI Transaction SQL Server đã Commit thành công:
+        // -> Kích hoạt cả OrderPlacedCacheInvalidationHandler (Redis) lẫn OrderPlacedRealtimeHandler (SignalR)
+        if (publisher is not null)
+        {
+            await publisher.Publish(
+                new OrderPlacedNotification(
+                    orderDto.Id,
+                    userId,
+                    orderDto.OrderNumber,
+                    orderDto.TotalAmount,
+                    orderDto.ShippingRecipientName,
+                    purchasedProductIds),
+                cancellationToken);
+        }
+
+        return orderDto;
     }
 }

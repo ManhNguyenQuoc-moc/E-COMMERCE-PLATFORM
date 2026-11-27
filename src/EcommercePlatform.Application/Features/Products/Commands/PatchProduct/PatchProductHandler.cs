@@ -8,7 +8,8 @@ namespace EcommercePlatform.Application.Features.Products.Commands.PatchProduct;
 public sealed class PatchProductHandler(
     IRepository<Product> productRepository,
     IRepository<Category> categoryRepository,
-    IUnitOfWork unitOfWork) : IRequestHandler<PatchProductCommand>
+    IUnitOfWork unitOfWork,
+    ICacheService? cacheService = null) : IRequestHandler<PatchProductCommand>
 {
     public async Task Handle(PatchProductCommand request, CancellationToken cancellationToken)
     {
@@ -34,5 +35,11 @@ public sealed class PatchProductHandler(
             request.CategoryId ?? product.CategoryId);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (cacheService is not null)
+        {
+            await cacheService.RemoveAsync($"products:by-id:{request.Id}", cancellationToken);
+            await cacheService.IncrementVersionAsync("products:version", cancellationToken);
+        }
     }
 }

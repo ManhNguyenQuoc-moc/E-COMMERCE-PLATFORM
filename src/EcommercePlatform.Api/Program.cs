@@ -6,7 +6,7 @@ using EcommercePlatform.Api.Middlewares;
 using EcommercePlatform.Application;
 using EcommercePlatform.Infrastructure;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-
+using EcommercePlatform.Api.Hubs;
 Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
@@ -77,5 +77,6 @@ app.MapOrderEndpoints();
 app.MapAdminEndpoints();
 app.MapReviewEndpoints();
 app.MapGrpcService<CatalogGrpcService>();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();
