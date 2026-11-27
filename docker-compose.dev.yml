@@ -68,8 +68,22 @@ services:
     depends_on:
       - api-dev
 
+  db-web:
+    image: dbeaver/cloudbeaver:latest
+    container_name: ecommerce_dev_db_web
+    restart: unless-stopped
+    ports:
+      - "8978:8978"
+    depends_on:
+      sqlserver-dev:
+        condition: service_healthy
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
+
 volumes:
   sqlserver_dev_data:
     driver: local
   redis_dev_data:
+    driver: local
+  cloudbeaver_data:
     driver: local
